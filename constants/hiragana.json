@@ -1,0 +1,570 @@
+[
+  {
+    "kana": "あ",
+    "romaji": "a",
+    "rowKey": "vowel",
+    "familyKey": "vowel",
+    "rowRank": 0,
+    "columnRank": 0
+  },
+  {
+    "kana": "い",
+    "romaji": "i",
+    "rowKey": "vowel",
+    "familyKey": "vowel",
+    "rowRank": 0,
+    "columnRank": 1
+  },
+  {
+    "kana": "う",
+    "romaji": "u",
+    "rowKey": "vowel",
+    "familyKey": "vowel",
+    "rowRank": 0,
+    "columnRank": 2
+  },
+  {
+    "kana": "え",
+    "romaji": "e",
+    "rowKey": "vowel",
+    "familyKey": "vowel",
+    "rowRank": 0,
+    "columnRank": 3
+  },
+  {
+    "kana": "お",
+    "romaji": "o",
+    "rowKey": "vowel",
+    "familyKey": "vowel",
+    "rowRank": 0,
+    "columnRank": 4
+  },
+  {
+    "kana": "か",
+    "romaji": "ka",
+    "rowKey": "k",
+    "familyKey": "k",
+    "rowRank": 1,
+    "columnRank": 0
+  },
+  {
+    "kana": "き",
+    "romaji": "ki",
+    "rowKey": "k",
+    "familyKey": "k",
+    "rowRank": 1,
+    "columnRank": 1
+  },
+  {
+    "kana": "く",
+    "romaji": "ku",
+    "rowKey": "k",
+    "familyKey": "k",
+    "rowRank": 1,
+    "columnRank": 2
+  },
+  {
+    "kana": "け",
+    "romaji": "ke",
+    "rowKey": "k",
+    "familyKey": "k",
+    "rowRank": 1,
+    "columnRank": 3
+  },
+  {
+    "kana": "こ",
+    "romaji": "ko",
+    "rowKey": "k",
+    "familyKey": "k",
+    "rowRank": 1,
+    "columnRank": 4
+  },
+  {
+    "kana": "さ",
+    "romaji": "sa",
+    "rowKey": "s",
+    "familyKey": "s",
+    "rowRank": 3,
+    "columnRank": 0
+  },
+  {
+    "kana": "し",
+    "romaji": "shi",
+    "rowKey": "s",
+    "familyKey": "s",
+    "rowRank": 3,
+    "columnRank": 1
+  },
+  {
+    "kana": "す",
+    "romaji": "su",
+    "rowKey": "s",
+    "familyKey": "s",
+    "rowRank": 3,
+    "columnRank": 2
+  },
+  {
+    "kana": "せ",
+    "romaji": "se",
+    "rowKey": "s",
+    "familyKey": "s",
+    "rowRank": 3,
+    "columnRank": 3
+  },
+  {
+    "kana": "そ",
+    "romaji": "so",
+    "rowKey": "s",
+    "familyKey": "s",
+    "rowRank": 3,
+    "columnRank": 4
+  },
+  {
+    "kana": "た",
+    "romaji": "ta",
+    "rowKey": "t",
+    "familyKey": "t",
+    "rowRank": 5,
+    "columnRank": 0
+  },
+  {
+    "kana": "ち",
+    "romaji": "chi",
+    "rowKey": "t",
+    "familyKey": "t",
+    "rowRank": 5,
+    "columnRank": 1
+  },
+  {
+    "kana": "つ",
+    "romaji": "tsu",
+    "rowKey": "t",
+    "familyKey": "t",
+    "rowRank": 5,
+    "columnRank": 2
+  },
+  {
+    "kana": "て",
+    "romaji": "te",
+    "rowKey": "t",
+    "familyKey": "t",
+    "rowRank": 5,
+    "columnRank": 3
+  },
+  {
+    "kana": "と",
+    "romaji": "to",
+    "rowKey": "t",
+    "familyKey": "t",
+    "rowRank": 5,
+    "columnRank": 4
+  },
+  {
+    "kana": "な",
+    "romaji": "na",
+    "rowKey": "n",
+    "familyKey": "n",
+    "rowRank": 7,
+    "columnRank": 0
+  },
+  {
+    "kana": "に",
+    "romaji": "ni",
+    "rowKey": "n",
+    "familyKey": "n",
+    "rowRank": 7,
+    "columnRank": 1
+  },
+  {
+    "kana": "ぬ",
+    "romaji": "nu",
+    "rowKey": "n",
+    "familyKey": "n",
+    "rowRank": 7,
+    "columnRank": 2
+  },
+  {
+    "kana": "ね",
+    "romaji": "ne",
+    "rowKey": "n",
+    "familyKey": "n",
+    "rowRank": 7,
+    "columnRank": 3
+  },
+  {
+    "kana": "の",
+    "romaji": "no",
+    "rowKey": "n",
+    "familyKey": "n",
+    "rowRank": 7,
+    "columnRank": 4
+  },
+  {
+    "kana": "は",
+    "romaji": "ha",
+    "rowKey": "h",
+    "familyKey": "h",
+    "rowRank": 8,
+    "columnRank": 0
+  },
+  {
+    "kana": "ひ",
+    "romaji": "hi",
+    "rowKey": "h",
+    "familyKey": "h",
+    "rowRank": 8,
+    "columnRank": 1
+  },
+  {
+    "kana": "ふ",
+    "romaji": "fu",
+    "rowKey": "h",
+    "familyKey": "h",
+    "rowRank": 8,
+    "columnRank": 2
+  },
+  {
+    "kana": "へ",
+    "romaji": "he",
+    "rowKey": "h",
+    "familyKey": "h",
+    "rowRank": 8,
+    "columnRank": 3
+  },
+  {
+    "kana": "ほ",
+    "romaji": "ho",
+    "rowKey": "h",
+    "familyKey": "h",
+    "rowRank": 8,
+    "columnRank": 4
+  },
+  {
+    "kana": "ま",
+    "romaji": "ma",
+    "rowKey": "m",
+    "familyKey": "m",
+    "rowRank": 11,
+    "columnRank": 0
+  },
+  {
+    "kana": "み",
+    "romaji": "mi",
+    "rowKey": "m",
+    "familyKey": "m",
+    "rowRank": 11,
+    "columnRank": 1
+  },
+  {
+    "kana": "む",
+    "romaji": "mu",
+    "rowKey": "m",
+    "familyKey": "m",
+    "rowRank": 11,
+    "columnRank": 2
+  },
+  {
+    "kana": "め",
+    "romaji": "me",
+    "rowKey": "m",
+    "familyKey": "m",
+    "rowRank": 11,
+    "columnRank": 3
+  },
+  {
+    "kana": "も",
+    "romaji": "mo",
+    "rowKey": "m",
+    "familyKey": "m",
+    "rowRank": 11,
+    "columnRank": 4
+  },
+  {
+    "kana": "や",
+    "romaji": "ya",
+    "rowKey": "y",
+    "familyKey": "y",
+    "rowRank": 12,
+    "columnRank": 0
+  },
+  {
+    "kana": "ゆ",
+    "romaji": "yu",
+    "rowKey": "y",
+    "familyKey": "y",
+    "rowRank": 12,
+    "columnRank": 1
+  },
+  {
+    "kana": "よ",
+    "romaji": "yo",
+    "rowKey": "y",
+    "familyKey": "y",
+    "rowRank": 12,
+    "columnRank": 2
+  },
+  {
+    "kana": "ら",
+    "romaji": "ra",
+    "rowKey": "r",
+    "familyKey": "r",
+    "rowRank": 13,
+    "columnRank": 0
+  },
+  {
+    "kana": "り",
+    "romaji": "ri",
+    "rowKey": "r",
+    "familyKey": "r",
+    "rowRank": 13,
+    "columnRank": 1
+  },
+  {
+    "kana": "る",
+    "romaji": "ru",
+    "rowKey": "r",
+    "familyKey": "r",
+    "rowRank": 13,
+    "columnRank": 2
+  },
+  {
+    "kana": "れ",
+    "romaji": "re",
+    "rowKey": "r",
+    "familyKey": "r",
+    "rowRank": 13,
+    "columnRank": 3
+  },
+  {
+    "kana": "ろ",
+    "romaji": "ro",
+    "rowKey": "r",
+    "familyKey": "r",
+    "rowRank": 13,
+    "columnRank": 4
+  },
+  {
+    "kana": "わ",
+    "romaji": "wa",
+    "rowKey": "w",
+    "familyKey": "w",
+    "rowRank": 14,
+    "columnRank": 0
+  },
+  {
+    "kana": "を",
+    "romaji": "wo",
+    "rowKey": "w",
+    "familyKey": "w",
+    "rowRank": 14,
+    "columnRank": 1
+  },
+  {
+    "kana": "ん",
+    "romaji": "n",
+    "rowKey": "w",
+    "familyKey": "w",
+    "rowRank": 14,
+    "columnRank": 2
+  },
+  {
+    "kana": "が",
+    "romaji": "ga",
+    "rowKey": "g",
+    "familyKey": "k",
+    "rowRank": 2,
+    "columnRank": 0
+  },
+  {
+    "kana": "ぎ",
+    "romaji": "gi",
+    "rowKey": "g",
+    "familyKey": "k",
+    "rowRank": 2,
+    "columnRank": 1
+  },
+  {
+    "kana": "ぐ",
+    "romaji": "gu",
+    "rowKey": "g",
+    "familyKey": "k",
+    "rowRank": 2,
+    "columnRank": 2
+  },
+  {
+    "kana": "げ",
+    "romaji": "ge",
+    "rowKey": "g",
+    "familyKey": "k",
+    "rowRank": 2,
+    "columnRank": 3
+  },
+  {
+    "kana": "ご",
+    "romaji": "go",
+    "rowKey": "g",
+    "familyKey": "k",
+    "rowRank": 2,
+    "columnRank": 4
+  },
+  {
+    "kana": "ざ",
+    "romaji": "za",
+    "rowKey": "z",
+    "familyKey": "s",
+    "rowRank": 4,
+    "columnRank": 0
+  },
+  {
+    "kana": "じ",
+    "romaji": "ji",
+    "rowKey": "z",
+    "familyKey": "s",
+    "rowRank": 4,
+    "columnRank": 1
+  },
+  {
+    "kana": "ず",
+    "romaji": "zu",
+    "rowKey": "z",
+    "familyKey": "s",
+    "rowRank": 4,
+    "columnRank": 2
+  },
+  {
+    "kana": "ぜ",
+    "romaji": "ze",
+    "rowKey": "z",
+    "familyKey": "s",
+    "rowRank": 4,
+    "columnRank": 3
+  },
+  {
+    "kana": "ぞ",
+    "romaji": "zo",
+    "rowKey": "z",
+    "familyKey": "s",
+    "rowRank": 4,
+    "columnRank": 4
+  },
+  {
+    "kana": "だ",
+    "romaji": "da",
+    "rowKey": "d",
+    "familyKey": "t",
+    "rowRank": 6,
+    "columnRank": 0
+  },
+  {
+    "kana": "ぢ",
+    "romaji": "di",
+    "rowKey": "d",
+    "familyKey": "t",
+    "rowRank": 6,
+    "columnRank": 1
+  },
+  {
+    "kana": "づ",
+    "romaji": "du",
+    "rowKey": "d",
+    "familyKey": "t",
+    "rowRank": 6,
+    "columnRank": 2
+  },
+  {
+    "kana": "で",
+    "romaji": "de",
+    "rowKey": "d",
+    "familyKey": "t",
+    "rowRank": 6,
+    "columnRank": 3
+  },
+  {
+    "kana": "ど",
+    "romaji": "do",
+    "rowKey": "d",
+    "familyKey": "t",
+    "rowRank": 6,
+    "columnRank": 4
+  },
+  {
+    "kana": "ば",
+    "romaji": "ba",
+    "rowKey": "b",
+    "familyKey": "h",
+    "rowRank": 9,
+    "columnRank": 0
+  },
+  {
+    "kana": "び",
+    "romaji": "bi",
+    "rowKey": "b",
+    "familyKey": "h",
+    "rowRank": 9,
+    "columnRank": 1
+  },
+  {
+    "kana": "ぶ",
+    "romaji": "bu",
+    "rowKey": "b",
+    "familyKey": "h",
+    "rowRank": 9,
+    "columnRank": 2
+  },
+  {
+    "kana": "べ",
+    "romaji": "be",
+    "rowKey": "b",
+    "familyKey": "h",
+    "rowRank": 9,
+    "columnRank": 3
+  },
+  {
+    "kana": "ぼ",
+    "romaji": "bo",
+    "rowKey": "b",
+    "familyKey": "h",
+    "rowRank": 9,
+    "columnRank": 4
+  },
+  {
+    "kana": "ぱ",
+    "romaji": "pa",
+    "rowKey": "p",
+    "familyKey": "h",
+    "rowRank": 10,
+    "columnRank": 0
+  },
+  {
+    "kana": "ぴ",
+    "romaji": "pi",
+    "rowKey": "p",
+    "familyKey": "h",
+    "rowRank": 10,
+    "columnRank": 1
+  },
+  {
+    "kana": "ぷ",
+    "romaji": "pu",
+    "rowKey": "p",
+    "familyKey": "h",
+    "rowRank": 10,
+    "columnRank": 2
+  },
+  {
+    "kana": "ぺ",
+    "romaji": "pe",
+    "rowKey": "p",
+    "familyKey": "h",
+    "rowRank": 10,
+    "columnRank": 3
+  },
+  {
+    "kana": "ぽ",
+    "romaji": "po",
+    "rowKey": "p",
+    "familyKey": "h",
+    "rowRank": 10,
+    "columnRank": 4
+  }
+]

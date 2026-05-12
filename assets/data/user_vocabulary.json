@@ -1,0 +1,114 @@
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "word": "てか",
+    "reading": "テカ",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:15.000Z"
+  },
+  {
+    "id": 2,
+    "user_id": 1,
+    "word": "*",
+    "reading": "",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:17.000Z"
+  },
+  {
+    "id": 4,
+    "user_id": 1,
+    "word": "と",
+    "reading": "ト",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:20.000Z"
+  },
+  {
+    "id": 5,
+    "user_id": 1,
+    "word": "に",
+    "reading": "ニ",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:28.000Z"
+  },
+  {
+    "id": 6,
+    "user_id": 1,
+    "word": "親子",
+    "reading": "オヤコ",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:22.000Z"
+  },
+  {
+    "id": 8,
+    "user_id": 1,
+    "word": "住む",
+    "reading": "スム",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:26.000Z"
+  },
+  {
+    "id": 9,
+    "user_id": 1,
+    "word": "から",
+    "reading": "カラ",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:24.000Z"
+  },
+  {
+    "id": 11,
+    "user_id": 1,
+    "word": "一緒",
+    "reading": "イッショ",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:30.000Z"
+  },
+  {
+    "id": 12,
+    "user_id": 1,
+    "word": "マリン",
+    "reading": "マリン",
+    "status": 0,
+    "updated_at": "2026-05-03T12:36:32.000Z"
+  },
+  {
+    "id": 22,
+    "user_id": 1,
+    "word": "ペコラ",
+    "reading": "",
+    "status": 1,
+    "updated_at": "2026-05-03T12:37:38.000Z"
+  },
+  {
+    "id": 23,
+    "user_id": 1,
+    "word": "いい",
+    "reading": "イイ",
+    "status": 0,
+    "updated_at": "2026-05-03T14:15:42.000Z"
+  },
+  {
+    "id": 26,
+    "user_id": 1,
+    "word": "ようやく",
+    "reading": "ヨウヤク",
+    "status": 0,
+    "updated_at": "2026-05-04T14:50:08.000Z"
+  },
+  {
+    "id": 29,
+    "user_id": 1,
+    "word": "勝ち",
+    "reading": "カチ",
+    "status": 0,
+    "updated_at": "2026-05-04T15:18:36.000Z"
+  },
+  {
+    "id": 30,
+    "user_id": 1,
+    "word": "終わるた",
+    "reading": "オワッタ",
+    "status": 0,
+    "updated_at": "2026-05-04T15:18:33.000Z"
+  }
+]
