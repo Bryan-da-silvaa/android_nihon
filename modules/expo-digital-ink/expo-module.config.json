@@ -1,0 +1,9 @@
+{
+  "name": "expo-digital-ink",
+  "version": "1.0.0",
+  "description": "Google ML Kit Digital Ink Recognition",
+  "platforms": ["android"],
+  "android": {
+    "modules": ["expo.modules.digitalink.ExpoDigitalInkModule"]
+  }
+}

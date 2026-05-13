@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getRadicals, Radical } from '../services/db/queries';
+import { useTheme } from '../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RadicalsScreen() {
 	const router = useRouter();
+	const { colors } = useTheme();
 	const [radicals, setRadicals] = useState<Radical[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -28,13 +31,13 @@ export default function RadicalsScreen() {
 	const strokeCounts = Object.keys(grouped).map(Number).sort((a, b) => a - b);
 
 	const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({
-		1: true, // On laisse le premier ouvert par défaut
+		1: true,
 	});
 
 	if (isLoading) {
 		return (
-			<View className="flex-1 bg-slate-950 items-center justify-center">
-				<Text className="text-indigo-200 font-bold tracking-widest animate-pulse">Chargement...</Text>
+			<View className={`flex-1 items-center justify-center`} style={{ backgroundColor: colors.hexBg }}>
+				<Text className="font-bold tracking-widest animate-pulse" style={{ color: colors.hexAccent }}>Chargement...</Text>
 			</View>
 		);
 	}
@@ -60,30 +63,37 @@ export default function RadicalsScreen() {
 	};
 
 	return (
-		<ScrollView className="flex-1 bg-slate-950 px-6 pt-4" showsVerticalScrollIndicator={false}>
+		<ScrollView 
+			className="flex-1" 
+			style={{ backgroundColor: colors.hexBg }}
+			contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 10 }}
+			showsVerticalScrollIndicator={false}
+		>
 			<View className="flex-row items-center mb-10">
 				<Pressable 
 					onPress={() => router.back()} 
-					className="w-12 h-12 bg-slate-900 rounded-2xl border border-slate-800 items-center justify-center mr-4 active:scale-90 transition-all"
+					className="w-12 h-12 rounded-2xl border items-center justify-center mr-4 active:scale-90"
+					style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
 				>
-					<Text className="text-white text-xl">←</Text>
+					<Ionicons name="arrow-back" size={20} color={colors.hexAccent} />
 				</Pressable>
 				<View>
-					<Text className="text-slate-500 font-black text-[10px] tracking-[0.2em] mb-1 uppercase">Dictionnaire</Text>
-					<Text className="text-3xl font-black text-white">Les Radicaux</Text>
+					<Text className="font-black text-[10px] tracking-[0.2em] mb-1 uppercase" style={{ color: colors.hexSubtext }}>Dictionnaire</Text>
+					<Text className="text-3xl font-black" style={{ color: colors.hexText }}>Les Radicaux</Text>
 				</View>
 			</View>
 
 			{/* Bouton Apprendre */}
 			<Pressable 
 				onPress={() => router.push('/learn_radicals')}
-				className="bg-indigo-600 rounded-[2rem] p-6 mb-10 flex-row items-center justify-between shadow-xl active:scale-95 transition-all"
+				className="rounded-[2rem] p-6 mb-10 flex-row items-center justify-between shadow-xl active:scale-95"
+				style={{ backgroundColor: colors.hexAccent }}
 			>
 				<View className="flex-1">
-					<Text className="text-indigo-200 font-black text-[10px] tracking-widest uppercase mb-1">Nouveau</Text>
+					<Text className="text-white opacity-80 font-black text-[10px] tracking-widest uppercase mb-1">Nouveau</Text>
 					<Text className="text-xl font-black text-white">Apprendre 5 Radicaux</Text>
 				</View>
-				<View className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center">
+				<View className="w-12 h-12 bg-white/20 rounded-2xl items-center justify-center">
 					<Text className="text-xl">✨</Text>
 				</View>
 			</Pressable>
@@ -94,14 +104,15 @@ export default function RadicalsScreen() {
 					<View key={count} className="mb-4">
 						<Pressable 
 							onPress={() => toggleSection(count)}
-							className="flex-row items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-900 mb-2 active:bg-slate-900 transition-all"
+							className="flex-row items-center p-4 rounded-2xl border mb-2 active:opacity-70"
+							style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
 						>
-							<View className="bg-indigo-600 px-3 py-1 rounded-lg mr-4">
+							<View className="px-3 py-1 rounded-lg mr-4" style={{ backgroundColor: colors.hexAccent }}>
 								<Text className="text-white font-black text-sm">{count}</Text>
 							</View>
-							<Text className="text-slate-300 font-black text-xs tracking-widest uppercase flex-1">Traits</Text>
-							<Text className="text-slate-600 text-xs font-black mr-2">{grouped[count].length} RADICAUX</Text>
-							<Text className="text-indigo-500 font-black text-lg">{isExpanded ? '−' : '+'}</Text>
+							<Text className="font-black text-xs tracking-widest uppercase flex-1" style={{ color: colors.hexText }}>Traits</Text>
+							<Text className="text-xs font-black mr-2 uppercase" style={{ color: colors.hexSubtext }}>{grouped[count].length} RADICAUX</Text>
+							<Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color={colors.hexAccent} />
 						</Pressable>
 
 						{isExpanded && (
@@ -109,10 +120,11 @@ export default function RadicalsScreen() {
 								{grouped[count].map(rad => (
 									<Pressable 
 										key={rad.id}
-										className="w-[21%] aspect-square bg-slate-900 rounded-[1.5rem] border border-slate-800 items-center justify-center p-2 shadow-sm active:scale-95 active:bg-slate-800 transition-all"
+										className="w-[21%] aspect-square rounded-[1.5rem] border items-center justify-center p-2 shadow-sm active:opacity-70"
+										style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
 									>
-										<Text className="text-2xl text-white font-bold mb-1">{rad.literal}</Text>
-										<Text className="text-[7px] text-slate-500 font-black text-center uppercase tracking-tighter" numberOfLines={1}>
+										<Text className="text-2xl font-bold mb-1" style={{ color: colors.hexText }}>{rad.literal}</Text>
+										<Text className="text-[7px] font-black text-center uppercase tracking-tighter" style={{ color: colors.hexSubtext }} numberOfLines={1}>
 											{parseMeaning(rad.meanings_fr || rad.meanings_en)}
 										</Text>
 									</Pressable>

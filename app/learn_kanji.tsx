@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, Animated, Dimensions } from 'react-native';
+import { View, Text, Pressable, Dimensions } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDb } from '../services/db/client';
-import { calculateSM2, syncReviews, QuizItem } from '../services/srs/engine';
+import { syncReviews, QuizItem } from '../services/srs/engine';
+import * as Speech from 'expo-speech';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -10,6 +14,7 @@ type Step = 'LOADING' | 'INTRO' | 'QUIZ' | 'SUMMARY';
 
 export default function LearnKanjiScreen() {
 	const router = useRouter();
+	const { colors } = useTheme();
 	const params = useLocalSearchParams();
 	const jlpt = params.jlpt ? parseInt(params.jlpt as string) : 5;
 
@@ -20,7 +25,9 @@ export default function LearnKanjiScreen() {
 	const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 	const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
-	const fadeAnim = useState(new Animated.Value(1))[0];
+	const playSound = (text: string) => {
+		Speech.speak(text, { language: 'ja-JP', rate: 0.85 });
+	};
 
 	const parseJsonArray = (input: string) => {
 		if (!input) return '-';
@@ -110,15 +117,13 @@ export default function LearnKanjiScreen() {
 		const db = await getDb();
 		
 		await db.withTransactionAsync(async () => {
-			const stmt = await db.prepareAsync(`
-				INSERT INTO user_kanji_stats (user_id, kanji_id, level, next_review, repetition, interval_days, ease_factor)
-				VALUES (1, ?, 1, ?, 0, 0, 2.5)
-			`);
 			const now = new Date().toISOString();
 			for (const item of finalItems) {
-				await stmt.executeAsync([item.dbId, now]);
+				await db.runAsync(`
+					INSERT INTO user_kanji_stats (user_id, kanji_id, level, next_review, repetition, interval_days, ease_factor)
+					VALUES (1, ?, 1, ?, 0, 0, 2.5)
+				`, [item.dbId, now]);
 			}
-			await stmt.finalizeAsync();
 		});
 
 		const rows = await db.getAllAsync(`SELECT id, kanji_id FROM user_kanji_stats WHERE kanji_id IN (${finalItems.map(i => i.dbId).join(',')})`) as any[];
@@ -131,51 +136,113 @@ export default function LearnKanjiScreen() {
 		setStep('SUMMARY');
 	};
 
+	const [traceRepetitions, setTraceRepetitions] = useState(0);
+	const REQUIRED_TRACES = 10;
+	const [sessionScores, setSessionScores] = useState<number[]>([]);
+
+	const avgScore = sessionScores.length > 0 
+		? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length) 
+		: 0;
+
+	const onTraceComplete = (strokes: number, score?: number) => {
+		if (score !== undefined) {
+			setSessionScores(prev => [...prev, score]);
+		}
+		const newCount = traceRepetitions + 1;
+		setTraceRepetitions(newCount);
+		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		
+		if (newCount === REQUIRED_TRACES) {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+		}
+	};
+
+	const goToNext = () => {
+		setTraceRepetitions(0);
+		setSessionScores([]);
+		if (currentIndex < kanjis.length - 1) {
+			setCurrentIndex(currentIndex + 1);
+		} else {
+			startQuiz();
+		}
+	};
+
 	if (step === 'LOADING') {
 		return (
-			<View className="flex-1 bg-slate-950 items-center justify-center">
-				<Text className="text-indigo-200 font-black tracking-widest animate-pulse uppercase">Initialisation...</Text>
+			<View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.hexBg }}>
+				<Text className="font-black tracking-widest animate-pulse uppercase" style={{ color: colors.hexAccent }}>Initialisation...</Text>
 			</View>
 		);
 	}
 
 	if (step === 'INTRO') {
 		const current = kanjis[currentIndex];
+		const { KanjiCanvas } = require('../components/KanjiCanvas');
+
 		return (
-			<View className="flex-1 bg-slate-950 p-6 justify-between">
+			<View className="flex-1 p-6 justify-between" style={{ backgroundColor: colors.hexBg }}>
 				<View className="pt-10">
-					<Text className="text-slate-500 font-black text-xs tracking-[0.3em] text-center mb-4 uppercase">APPRENTISSAGE N{jlpt}</Text>
-					<View className="flex-row justify-center gap-2">
+					<Text className="font-black text-xs tracking-[0.3em] text-center mb-2 uppercase" style={{ color: colors.hexSubtext }}>Apprentissage N{jlpt}</Text>
+					<View className="flex-row justify-center gap-2 mb-4">
 						{kanjis.map((_, i) => (
-							<View key={i} className={`h-1.5 rounded-full ${i <= currentIndex ? 'bg-indigo-500 w-8' : 'bg-slate-800 w-4'}`} />
+							<View 
+								key={i} 
+								className="h-1.5 rounded-full" 
+								style={{ 
+									width: i === currentIndex ? 32 : 12, 
+									backgroundColor: i <= currentIndex ? colors.hexAccent : colors.hexBgSecondary 
+								}} 
+							/>
 						))}
 					</View>
 				</View>
 
-				<View className="items-center">
-					<View className="w-56 h-56 bg-slate-900 rounded-[3.5rem] border-2 border-indigo-500/20 items-center justify-center mb-8 shadow-2xl">
-						<Text className="text-9xl text-white font-bold">{current.literal}</Text>
+				<View className="items-center flex-1 justify-center">
+					{/* Box de traduction avec réduction auto de la police */}
+					<View className="h-20 w-full items-center justify-center mb-4 px-4">
+						<Text 
+							className="font-black text-center uppercase tracking-tight" 
+							style={{ color: colors.hexText, fontSize: 24 }}
+							numberOfLines={2}
+							adjustsFontSizeToFit
+						>
+							{parseJsonArray(current.meanings_fr || current.meanings_en)}
+						</Text>
+						<Text style={{ color: colors.hexAccent, fontWeight: '900', fontSize: 12, marginTop: 4 }} className="uppercase tracking-[0.2em]">
+							Tracé {traceRepetitions} / {REQUIRED_TRACES} 
+							{traceRepetitions >= REQUIRED_TRACES && sessionScores.length > 0 && ` • Précision : ${avgScore}%`}
+						</Text>
 					</View>
-					<Text className="text-3xl font-black text-white mb-2 text-center uppercase tracking-tight">
-						{parseJsonArray(current.meanings_fr || current.meanings_en)}
-					</Text>
-					<View className="flex-row gap-4 mt-2 px-4 flex-wrap justify-center">
-						<View className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
-							<Text className="text-indigo-400 font-bold text-xs">On: {parseJsonArray(current.readings_on)}</Text>
-						</View>
-						<View className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
-							<Text className="text-emerald-400 font-bold text-xs">Kun: {parseJsonArray(current.readings_kun)}</Text>
-						</View>
-					</View>
+
+					<KanjiCanvas 
+						targetKanji={current.literal} 
+						colors={colors}
+						onComplete={onTraceComplete}
+					/>
 				</View>
 
-				<View className="mb-12">
+				{/* Zone basse : Tags + Bouton */}
+				<View className="mb-8 px-6 gap-4">
+					<View className="flex-row gap-2 flex-wrap justify-center">
+						<View className="px-3 py-1.5 rounded-xl border" style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}>
+							<Text className="font-bold text-[10px]" style={{ color: colors.hexAccent }}>On: {parseJsonArray(current.readings_on)}</Text>
+						</View>
+						<View className="px-3 py-1.5 rounded-xl border" style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}>
+							<Text className="font-bold text-[10px]" style={{ color: '#10b981' }}>Kun: {parseJsonArray(current.readings_kun)}</Text>
+						</View>
+					</View>
+
 					<Pressable 
-						onPress={() => currentIndex < kanjis.length - 1 ? setCurrentIndex(currentIndex + 1) : startQuiz()}
-						className="bg-indigo-600 py-6 rounded-[2rem] items-center shadow-xl active:scale-95 transition-all"
+						onPress={goToNext}
+						disabled={traceRepetitions < REQUIRED_TRACES}
+						className="py-5 rounded-[2rem] items-center shadow-xl active:scale-95 transition-all"
+						style={{ 
+							backgroundColor: traceRepetitions >= REQUIRED_TRACES ? colors.hexAccent : colors.hexBgSecondary,
+							opacity: traceRepetitions >= REQUIRED_TRACES ? 1 : 0.5 
+						}}
 					>
-						<Text className="text-white font-black text-lg tracking-widest">
-							{currentIndex < kanjis.length - 1 ? 'SUIVANT' : 'COMMENCER LE TEST'}
+						<Text style={{ color: traceRepetitions >= REQUIRED_TRACES ? '#fff' : colors.hexSubtext }} className="font-black text-lg tracking-widest uppercase">
+							{currentIndex < kanjis.length - 1 ? 'Suivant' : 'Commencer le test'}
 						</Text>
 					</Pressable>
 				</View>
@@ -188,15 +255,18 @@ export default function LearnKanjiScreen() {
 		const choices = [current.answer, ...current.distractors].sort();
 
 		return (
-			<View className="flex-1 bg-slate-950 p-6 justify-between">
+			<View className="flex-1 p-6 justify-between" style={{ backgroundColor: colors.hexBg }}>
 				<View className="pt-10">
-					<Text className="text-slate-500 font-black text-xs tracking-[0.3em] text-center mb-2 uppercase">VÉRIFICATION</Text>
-					<Text className="text-white font-black text-center text-xl">Quel est le sens de ce kanji ?</Text>
+					<Text className="font-black text-xs tracking-[0.3em] text-center mb-2 uppercase" style={{ color: colors.hexSubtext }}>Vérification</Text>
+					<Text className="font-black text-center text-xl" style={{ color: colors.hexText }}>Quel est le sens de ce kanji ?</Text>
 				</View>
 
 				<View className="items-center">
-					<View className="w-44 h-44 bg-slate-900 rounded-[2.5rem] border border-slate-800 items-center justify-center mb-10">
-						<Text className="text-8xl text-white font-bold">{current.prompt}</Text>
+					<View 
+						className="w-36 h-36 rounded-[2rem] border items-center justify-center mb-8"
+						style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
+					>
+						<Text className="text-7xl font-bold" style={{ color: colors.hexText }}>{current.prompt}</Text>
 					</View>
 
 					<View className="w-full gap-3">
@@ -204,15 +274,19 @@ export default function LearnKanjiScreen() {
 							const isThisSelected = selectedAnswer === choice;
 							const isThisCorrect = choice === current.answer;
 							
-							let bgColor = 'bg-slate-900';
-							let borderColor = 'border-slate-800';
+							let bgColor = colors.hexCard;
+							let borderColor = colors.hexBorder;
+							let textColor = colors.hexText;
+
 							if (selectedAnswer) {
 								if (isThisCorrect) {
-									bgColor = 'bg-emerald-600';
-									borderColor = 'border-emerald-500';
+									bgColor = '#059669'; // Emerald-600
+									borderColor = '#10b981';
+									textColor = '#ffffff';
 								} else if (isThisSelected) {
-									bgColor = 'bg-red-600';
-									borderColor = 'border-red-500';
+									bgColor = '#dc2626'; // Red-600
+									borderColor = '#f87171';
+									textColor = '#ffffff';
 								}
 							}
 
@@ -220,9 +294,10 @@ export default function LearnKanjiScreen() {
 								<Pressable
 									key={i}
 									onPress={() => handleAnswer(choice)}
-									className={`py-5 px-6 rounded-2xl border ${borderColor} ${bgColor} active:scale-98 transition-all`}
+									className="py-5 px-6 rounded-2xl border active:scale-98 transition-all"
+									style={{ backgroundColor: bgColor, borderColor: borderColor }}
 								>
-									<Text className="text-white font-black text-center uppercase tracking-widest">{choice}</Text>
+									<Text className="font-black text-center uppercase tracking-widest" style={{ color: textColor }}>{choice}</Text>
 								</Pressable>
 							);
 						})}
@@ -235,20 +310,24 @@ export default function LearnKanjiScreen() {
 
 	if (step === 'SUMMARY') {
 		return (
-			<View className="flex-1 bg-slate-950 p-8 items-center justify-center">
-				<View className="w-24 h-24 bg-indigo-500 rounded-full items-center justify-center mb-8 shadow-2xl">
+			<View className="flex-1 p-8 items-center justify-center" style={{ backgroundColor: colors.hexBg }}>
+				<View 
+					className="w-24 h-24 rounded-full items-center justify-center mb-8 shadow-2xl"
+					style={{ backgroundColor: colors.hexAccent }}
+				>
 					<Text className="text-5xl">🎯</Text>
 				</View>
-				<Text className="text-4xl font-black text-white text-center mb-4">Nouveaux Kanjis !</Text>
-				<Text className="text-slate-400 text-center text-lg mb-12 leading-relaxed">
-					Félicitations ! Tu as appris <Text className="text-indigo-400 font-black">5 kanjis</Text> du niveau JLPT N{jlpt}.
+				<Text className="text-4xl font-black text-center mb-4" style={{ color: colors.hexText }}>Nouveaux Kanjis !</Text>
+				<Text className="text-center text-lg mb-12 leading-relaxed" style={{ color: colors.hexSubtext }}>
+					Félicitations ! Tu as appris <Text className="font-black" style={{ color: colors.hexAccent }}>5 kanjis</Text> du niveau JLPT N{jlpt}.
 				</Text>
 				
 				<Pressable 
 					onPress={() => router.replace('/')}
-					className="w-full bg-indigo-600 py-6 rounded-[2rem] items-center shadow-xl active:scale-95 transition-all"
+					className="w-full py-6 rounded-[2rem] items-center shadow-xl active:scale-95 transition-all"
+					style={{ backgroundColor: colors.hexAccent }}
 				>
-					<Text className="text-white font-black text-lg tracking-widest">CONTINUER</Text>
+					<Text className="text-white font-black text-lg tracking-widest uppercase">Continuer</Text>
 				</Pressable>
 			</View>
 		);

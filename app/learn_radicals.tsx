@@ -147,10 +147,10 @@ export default function LearnRadicalsScreen() {
 				</View>
 
 				<Animated.View style={{ opacity: fadeAnim }} className="items-center">
-					<View className="w-48 h-48 bg-slate-900 rounded-[3rem] border-2 border-indigo-500/20 items-center justify-center mb-8 shadow-2xl">
-						<Text className="text-8xl text-white font-bold">{current.literal}</Text>
+					<View className="w-40 h-40 bg-slate-900 rounded-[2.5rem] border-2 border-indigo-500/20 items-center justify-center mb-6 shadow-2xl">
+						<Text className="text-7xl text-white font-bold">{current.literal}</Text>
 					</View>
-					<Text className="text-4xl font-black text-white mb-2 text-center uppercase tracking-widest">
+					<Text className="text-3xl font-black text-white mb-2 text-center uppercase tracking-widest">
 						{parseMeaning(current.meanings_fr || current.meanings_en)}
 					</Text>
 					<Text className="text-slate-500 font-bold text-lg">Radical • {current.stroke_count} traits</Text>
@@ -188,7 +188,7 @@ export default function LearnRadicalsScreen() {
 				</View>
 
 				<View className="items-center">
-					<View className="w-40 h-40 bg-slate-900 rounded-[2.5rem] border border-slate-800 items-center justify-center mb-10">
+					<View className="w-36 h-36 bg-slate-900 rounded-[2rem] border border-slate-800 items-center justify-center mb-8">
 						<Text className="text-7xl text-white font-bold">{current.prompt}</Text>
 					</View>
 

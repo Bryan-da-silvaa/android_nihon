@@ -1,5 +1,12 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+
+# Nihon Custom Build Artifacts
+dist_apks/
+modules/**/android/build/
+modules/**/android/.gradle/
+modules/**/ios/build/
+
 # dependencies
 node_modules/
 

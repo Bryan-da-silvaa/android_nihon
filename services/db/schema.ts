@@ -47,7 +47,11 @@ export async function initializeSchema() {
         best_score_katakana INTEGER DEFAULT 0,
         best_score_mixed INTEGER DEFAULT 0,
         enable_kana_audio INTEGER DEFAULT 1,
-        kanji_per_page INTEGER DEFAULT 50
+        kanji_per_page INTEGER DEFAULT 50,
+        streak_count INTEGER DEFAULT 0,
+        last_study_date TEXT DEFAULT NULL,
+        daily_goal INTEGER DEFAULT 20,
+        app_theme TEXT DEFAULT 'indigo_zen'
       );
     `);
 
@@ -148,7 +152,55 @@ export async function initializeSchema() {
       );
     `);
 
-    console.log("✅ [SQLite] Schéma initialisé (Miroir du Web) avec succès.");
+    // 9. custom_decks
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS custom_decks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        is_visible INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 10. custom_cards
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS custom_cards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        deck_id INTEGER NOT NULL,
+        front TEXT NOT NULL,
+        back TEXT NOT NULL,
+        reading TEXT,
+        repetition INTEGER DEFAULT 0,
+        interval_days REAL DEFAULT 0,
+        ease_factor REAL DEFAULT 2.5,
+        next_review TEXT DEFAULT CURRENT_TIMESTAMP,
+        last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (deck_id) REFERENCES custom_decks(id) ON DELETE CASCADE
+      );
+    `);
+
+    // Migrations
+    try {
+      await db.execAsync("ALTER TABLE custom_cards ADD COLUMN reading TEXT;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE users ADD COLUMN streak_count INTEGER DEFAULT 0;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE users ADD COLUMN last_study_date TEXT DEFAULT NULL;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE users ADD COLUMN daily_goal INTEGER DEFAULT 20;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE users ADD COLUMN app_theme TEXT DEFAULT 'indigo_zen';");
+    } catch (e) {}
+
+    console.log("✅ [SQLite] Schéma initialisé avec succès.");
   } catch (error) {
     console.error("❌ [SQLite] Erreur lors de l'initialisation du schéma :", error);
     throw error;
