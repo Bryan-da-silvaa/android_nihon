@@ -81,7 +81,8 @@ export default function LearnKanjiScreen() {
 				distractors: distractors.sort(() => Math.random() - 0.5),
 				repetition: 0,
 				intervalDays: 0,
-				easeFactor: 2.5
+				easeFactor: 2.5,
+				failCount: 0
 			};
 		});
 		setQuizItems(items.sort(() => Math.random() - 0.5));
@@ -137,7 +138,23 @@ export default function LearnKanjiScreen() {
 	};
 
 	const [traceRepetitions, setTraceRepetitions] = useState(0);
-	const REQUIRED_TRACES = 10;
+	const [REQUIRED_TRACES, setRequiredTraces] = useState(10);
+	const [brushSkin, setBrushSkin] = useState('classic');
+
+	useEffect(() => {
+		async function fetchSettings() {
+			const { getUserProfile } = require('../services/db/queries');
+			const profile = await getUserProfile();
+			if (profile?.kanji_trace_count) {
+				setRequiredTraces(profile.kanji_trace_count);
+			}
+			if (profile?.brush_skin) {
+				setBrushSkin(profile.brush_skin);
+			}
+		}
+		fetchSettings();
+	}, []);
+
 	const [sessionScores, setSessionScores] = useState<number[]>([]);
 
 	const avgScore = sessionScores.length > 0 
@@ -218,6 +235,7 @@ export default function LearnKanjiScreen() {
 						targetKanji={current.literal} 
 						colors={colors}
 						onComplete={onTraceComplete}
+						brushSkin={brushSkin}
 					/>
 				</View>
 

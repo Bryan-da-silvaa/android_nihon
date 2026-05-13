@@ -1,14 +1,16 @@
 import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { getDashboardStats, DashboardStats } from '../services/db/queries';
+import { getDashboardStats, DashboardStats, getUserProfile } from '../services/db/queries';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
 	const router = useRouter();
 	const { colors } = useTheme();
 	const [stats, setStats] = useState<DashboardStats | null>(null);
+	const [showExams, setShowExams] = useState(true);
 	const [reviewModal, setReviewModal] = useState<{
 		visible: boolean;
 		title: string;
@@ -20,11 +22,15 @@ export default function HomeScreen() {
 
 	useFocusEffect(
 		useCallback(() => {
-			async function loadStats() {
-				const data = await getDashboardStats();
+			async function loadData() {
+				const [data, profile] = await Promise.all([
+					getDashboardStats(),
+					getUserProfile()
+				]);
 				setStats(data);
+				setShowExams(profile?.show_exams !== 0);
 			}
-			loadStats();
+			loadData();
 		}, [])
 	);
 
@@ -117,6 +123,37 @@ export default function HomeScreen() {
 			</View>
 		);
 	};
+	
+	const renderExamBox = (title: string, type: 'kanji' | 'hiragana' | 'katakana', jlpt?: number) => {
+		return (
+			<Pressable 
+				onPress={() => {
+					Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+					router.push({ 
+						pathname: '/quiz', 
+						params: { 
+							type, 
+							jlpt, 
+							mode: 'boss' // On réutilise le mode boss (complet + sans SRS)
+						} 
+					});
+				}}
+				className="rounded-[2.5rem] p-6 mb-4 border shadow-sm flex-row items-center justify-between"
+				style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
+			>
+				<View className="flex-row items-center gap-4">
+					<View className="w-12 h-12 rounded-2xl items-center justify-center bg-amber-500/10">
+						<Text className="text-xl">🔥</Text>
+					</View>
+					<View>
+						<Text className="text-lg font-black" style={{ color: colors.hexText }}>{title}</Text>
+						<Text className="text-[10px] font-bold uppercase tracking-widest" style={{ color: colors.hexSubtext }}>Validation Totale</Text>
+					</View>
+				</View>
+				<Ionicons name="chevron-forward" size={20} color={colors.hexSubtext} />
+			</Pressable>
+		);
+	};
 
 	return (
 		<View className="flex-1" style={{ backgroundColor: colors.hexBg }}>
@@ -126,16 +163,22 @@ export default function HomeScreen() {
 				showsVerticalScrollIndicator={false}
 			>
 				<View className="flex-row items-center justify-between mb-8">
-					<View>
+					<View className="flex-1 mr-4">
 						<Text className={`font-black text-xs tracking-[0.2em] mb-1 uppercase`} style={{ color: colors.hexSubtext }}>Dashboard</Text>
 						<Text className={`text-3xl font-black`} style={{ color: colors.hexText }}>Vos Programmes</Text>
 					</View>
-					<View 
-						className={`w-12 h-12 rounded-2xl border items-center justify-center`}
-						style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
-					>
-						<Text className="text-xl">📊</Text>
-					</View>
+					{stats && (
+						<View 
+							className={`px-4 py-2 rounded-2xl border flex-row items-center gap-2`}
+							style={{ backgroundColor: colors.hexCard, borderColor: stats.rank.color + '40' }}
+						>
+							<Text className="text-xl">{stats.rank.icon}</Text>
+							<View>
+								<Text className="font-black text-[10px] tracking-tighter uppercase opacity-50" style={{ color: stats.rank.color }}>{stats.rank.title}</Text>
+								<Text className="font-black text-xs" style={{ color: colors.hexText }}>{stats.rank.totalLearned} pts</Text>
+							</View>
+						</View>
+					)}
 				</View>
 
 				{/* Daily Goal Progress */}
@@ -171,6 +214,41 @@ export default function HomeScreen() {
 								}} 
 							/>
 						</View>
+					</View>
+				)}
+
+				{/* Points Faibles (Leeches) - Apparaît seulement si nécessaire */}
+				{stats && stats.leechCount > 0 && (
+					<View 
+						className="rounded-[2.5rem] p-6 mb-8 border shadow-lg overflow-hidden"
+						style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
+					>
+						<View className="flex-row items-center justify-between mb-6">
+							<View className="flex-row items-center gap-3">
+								<View 
+									className="w-12 h-12 rounded-2xl items-center justify-center"
+									style={{ backgroundColor: colors.hexAccent + '1a' }}
+								>
+									<Text className="text-xl">🎯</Text>
+								</View>
+								<View>
+									<Text className="text-2xl font-black" style={{ color: colors.hexText }}>Points Faibles</Text>
+									<Text className="text-[10px] font-bold uppercase tracking-widest" style={{ color: colors.hexSubtext }}>
+										{stats.leechCount} éléments à renforcer
+									</Text>
+								</View>
+							</View>
+						</View>
+
+						<Pressable
+							onPress={() => router.push('/leech_session')}
+							className="w-full py-5 rounded-[1.5rem] items-center justify-center shadow-md active:scale-95 transition-all"
+							style={{ backgroundColor: colors.hexBgSecondary, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.hexBorder }}
+						>
+							<Text className="font-black tracking-[0.1em] text-xs" style={{ color: colors.hexAccent }}>
+								LANCER LA SESSION FOCUS
+							</Text>
+						</Pressable>
 					</View>
 				)}
 
@@ -219,6 +297,30 @@ export default function HomeScreen() {
 						)}
 					</View>
 				))}
+
+				<View className="h-10" />
+
+				{/* Section Examens (si activée et qu'au moins un examen est disponible) */}
+				{showExams && stats && (
+					(stats.jlptN5.learned === stats.jlptN5.total && stats.jlptN5.total > 0) ||
+					(stats.jlptN4.learned === stats.jlptN4.total && stats.jlptN4.total > 0) ||
+					(stats.hiragana.learned === stats.hiragana.total && stats.hiragana.total > 0) ||
+					(stats.katakana.learned === stats.katakana.total && stats.katakana.total > 0)
+				) && (
+					<View className="mt-4">
+						<View className="flex-row items-center gap-3 mb-6">
+							<View className="w-8 h-8 rounded-xl items-center justify-center" style={{ backgroundColor: '#F59E0B20' }}>
+								<Text className="text-sm">🔥</Text>
+							</View>
+							<Text className="text-xl font-black" style={{ color: colors.hexText }}>Examens de Maîtrise</Text>
+						</View>
+
+						{stats.jlptN5.learned === stats.jlptN5.total && stats.jlptN5.total > 0 && renderExamBox("Examen N5", "kanji", 5)}
+						{stats.jlptN4.learned === stats.jlptN4.total && stats.jlptN4.total > 0 && renderExamBox("Examen N4", "kanji", 4)}
+						{stats.hiragana.learned === stats.hiragana.total && stats.hiragana.total > 0 && renderExamBox("Examen Hiragana", "hiragana")}
+						{stats.katakana.learned === stats.katakana.total && stats.katakana.total > 0 && renderExamBox("Examen Katakana", "katakana")}
+					</View>
+				)}
 
 				<View className="h-20" />
 			</ScrollView>
@@ -296,7 +398,7 @@ export default function HomeScreen() {
 						</View>
 
 						<Text className={`text-[10px] text-center mt-8 font-bold uppercase tracking-widest`} style={{ color: colors.hexSubtext }}>
-							La révision libre n'impacte pas ton planning SRS
+							La révision libre n&apos;impacte pas ton planning SRS
 						</Text>
 					</View>
 				</View>

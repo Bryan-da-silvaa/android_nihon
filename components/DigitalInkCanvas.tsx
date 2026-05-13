@@ -112,7 +112,7 @@ export function DigitalInkCanvas({ onRecognized }: Props) {
       <View style={[styles.canvas, { backgroundColor: colors.hexCard, borderColor: colors.hexBorder, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.hexAccent} />
         <Text style={{ color: colors.hexSubtext, marginTop: 10, textAlign: 'center', paddingHorizontal: 20 }}>
-          Téléchargement de l'Intelligence Artificielle (Japonais)...
+          Téléchargement de l&apos;Intelligence Artificielle (Japonais)...
         </Text>
       </View>
     );

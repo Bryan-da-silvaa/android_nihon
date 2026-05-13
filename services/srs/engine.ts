@@ -37,7 +37,9 @@ export interface QuizItem {
   easeFactor: number;
   isCorrect?: boolean;
   grade?: SRSGrade;
+  failCount: number;
   strategy?: 'intensive' | 'balanced' | 'relaxed';
+  nextReview?: string;
 }
 
 // Cache mémoire
@@ -113,7 +115,15 @@ function getRandomDistractors(type: QuestionType, correctAnswer: string, count: 
   return Array.from(distractors);
 }
 
-export async function fetchDueCards(deckType: 'kanji' | 'hiragana' | 'katakana' | 'custom', limit: number = 20, jlpt?: number, deckId?: number, isLearning?: boolean, isCram?: boolean): Promise<QuizItem[]> {
+export async function fetchDueCards(
+	deckType: 'kanji' | 'hiragana' | 'katakana' | 'custom' | 'leech', 
+	limit: number = 20, 
+	jlpt?: number, 
+	deckId?: number, 
+	isLearning?: boolean, 
+	isCram?: boolean,
+	isBoss?: boolean
+): Promise<QuizItem[]> {
 	const db = await getDb();
 	await loadDistractorsPool();
 
@@ -121,16 +131,19 @@ export async function fetchDueCards(deckType: 'kanji' | 'hiragana' | 'katakana' 
 	let allDue: any[] = [];
   let customDistractorPool: string[] = [];
 
+  let query = '';
+  let params: any[] = [];
+
 	if (deckType === 'kanji') {
-		let query = `
-      SELECT 
-        uks.id as dbId, uks.kanji_id, uks.repetition, uks.interval_days, uks.ease_factor, uks.next_review,
-        kd.literal, kd.meanings_fr, kd.meanings_en, kd.readings_kun, kd.readings_on, kd.jlpt
-      FROM user_kanji_stats uks
-      JOIN kanji_data kd ON uks.kanji_id = kd.id
-      WHERE ${isCram ? 'uks.repetition > 0' : 'uks.next_review <= ?'}
-    `;
-		const params: any[] = isCram ? [] : [now];
+		query = `
+			SELECT 
+				uks.id as dbId, uks.kanji_id, uks.repetition, uks.interval_days, uks.ease_factor, uks.next_review, uks.fail_count,
+				kd.literal, kd.meanings_fr, kd.meanings_en, kd.readings_kun, kd.readings_on, kd.jlpt
+			FROM user_kanji_stats uks
+			JOIN kanji_data kd ON uks.kanji_id = kd.id
+			WHERE ${isCram ? '1=1' : 'uks.next_review <= ?'}
+		`;
+		params = isCram ? [] : [now];
 
 		if (jlpt) {
 			query += ` AND kd.jlpt = ?`;
@@ -149,7 +162,7 @@ export async function fetchDueCards(deckType: 'kanji' | 'hiragana' | 'katakana' 
 		if (isLearning) {
 			whereClause = 'repetition = 0';
 		} else if (isCram) {
-			whereClause = 'repetition > 0';
+			whereClause = '1=1';
 		} else {
 			whereClause = 'next_review <= ? AND repetition > 0';
 			queryParams.push(now);
@@ -157,7 +170,7 @@ export async function fetchDueCards(deckType: 'kanji' | 'hiragana' | 'katakana' 
 		queryParams.push(limit);
 
 		allDue = await db.getAllAsync(`
-			SELECT id as dbId, front, reading, back, repetition, interval_days, ease_factor, next_review
+			SELECT id as dbId, front, reading, back, repetition, interval_days, ease_factor, next_review, fail_count
 			FROM custom_cards
 			WHERE deck_id = ? AND ${whereClause}
 			ORDER BY next_review ASC
@@ -166,13 +179,31 @@ export async function fetchDueCards(deckType: 'kanji' | 'hiragana' | 'katakana' 
 
 		const allCards = await db.getAllAsync('SELECT front, reading, back FROM custom_cards WHERE deck_id = ?', [deckId]) as any[];
 		customDistractorPool = allCards.flatMap(c => [c.front, c.reading, c.back].filter(x => x));
-	} else {
+	} else if (deckType === 'leech') {
+    // Mode spécial : on récupère tout ce qui a 3+ échecs, mélangé
+    const kanjis = await db.getAllAsync(`
+      SELECT 'user_kanji_stats' as source, uks.id as dbId, uks.kanji_id, uks.repetition, uks.interval_days, uks.ease_factor, uks.fail_count, kd.literal, kd.meanings_fr, kd.readings_kun, kd.readings_on
+      FROM user_kanji_stats uks JOIN kanji_data kd ON uks.kanji_id = kd.id WHERE uks.fail_count >= 3
+    `) as any[];
+    
+    const kanas = await db.getAllAsync(`
+      SELECT 'kana_stats' as source, id as dbId, kana, srs_repetition as repetition, srs_interval as interval_days, srs_ease_factor as ease_factor, srs_fail_count as fail_count
+      FROM kana_stats WHERE srs_fail_count >= 3
+    `) as any[];
+
+    const custom = await db.getAllAsync(`
+      SELECT 'custom_cards' as source, id as dbId, front, reading, back, repetition, interval_days, ease_factor, fail_count
+      FROM custom_cards WHERE fail_count >= 3
+    `) as any[];
+
+    allDue = [...kanjis, ...kanas, ...custom].sort(() => Math.random() - 0.5).slice(0, limit);
+  } else {
 		const dueKanas: any[] = await db.getAllAsync(`
-      SELECT id as dbId, kana, srs_repetition as repetition, srs_interval as interval_days, srs_ease_factor as ease_factor, srs_next_review as next_review
-      FROM kana_stats
-      WHERE ${isCram ? 'srs_repetition > 0' : 'srs_next_review <= ?'}
-      ORDER BY srs_next_review ASC
-    `, isCram ? [] : [now]);
+			SELECT id as dbId, kana, srs_repetition as repetition, srs_interval as interval_days, srs_ease_factor as ease_factor, srs_next_review as next_review, srs_fail_count as fail_count
+			FROM kana_stats
+			WHERE ${isCram ? '1=1' : 'srs_next_review <= ?'}
+			ORDER BY srs_next_review ASC
+		`, isCram ? [] : [now]);
 
 		const targetJson = deckType === 'hiragana' ? require('../../constants/hiragana.json') : require('../../constants/katakana.json');
 		const targetSet = new Set(targetJson.map((k: any) => k.kana));
@@ -244,7 +275,8 @@ export async function fetchDueCards(deckType: 'kanji' | 'hiragana' | 'katakana' 
       reading: row.reading || (row.kana ? kanaDataMap.get(row.kana) : kanjiReading),
       repetition: row.repetition || 0,
       intervalDays: row.interval_days || 0,
-      easeFactor: row.ease_factor || 2.5
+      easeFactor: row.ease_factor || 2.5,
+      failCount: row.fail_count || 0
     });
   }
   return quizItems;
@@ -362,20 +394,18 @@ export function calculateSM2(item: QuizItem, grade: SRSGrade, strategy: 'intensi
 import { updateDailyStreak } from '../db/queries';
 
 export async function syncReviews(items: QuizItem[], isCram?: boolean): Promise<void> {
-  if (isCram) return;
   const db = await getDb();
-
   await updateDailyStreak();
 
   await db.withTransactionAsync(async () => {
     const kanjiStmt = await db.prepareAsync(`
-      UPDATE user_kanji_stats SET repetition = ?, interval_days = ?, ease_factor = ?, next_review = ?, last_seen = ? WHERE id = ?
+      UPDATE user_kanji_stats SET repetition = ?, interval_days = ?, ease_factor = ?, next_review = ?, last_seen = ?, fail_count = ? WHERE id = ?
     `);
     const kanaStmt = await db.prepareAsync(`
-      UPDATE kana_stats SET srs_repetition = ?, srs_interval = ?, srs_ease_factor = ?, srs_next_review = ?, last_seen = ? WHERE id = ?
+      UPDATE kana_stats SET srs_repetition = ?, srs_interval = ?, srs_ease_factor = ?, srs_next_review = ?, last_seen = ?, srs_fail_count = ? WHERE id = ?
     `);
     const customStmt = await db.prepareAsync(`
-      UPDATE custom_cards SET repetition = ?, interval_days = ?, ease_factor = ?, next_review = ?, last_seen = ? WHERE id = ?
+      UPDATE custom_cards SET repetition = ?, interval_days = ?, ease_factor = ?, next_review = ?, last_seen = ?, fail_count = ? WHERE id = ?
     `);
 
     const now = new Date().toISOString();
@@ -384,14 +414,32 @@ export async function syncReviews(items: QuizItem[], isCram?: boolean): Promise<
       if (item.grade === undefined && item.isCorrect === undefined) continue;
 
       const grade = item.grade || (item.isCorrect ? 3 : 1);
-      const newState = calculateSM2(item, grade, item.strategy || 'balanced');
+      
+      // Gestion du fail_count (Sangsues) - On met à jour MÊME en mode Cram
+      let newFailCount = item.failCount || 0;
+      if (grade === 1) newFailCount += 1;
+      else if (grade >= 3) newFailCount = Math.max(0, newFailCount - 1);
+
+      // Calcul du nouvel état SRS (uniquement si pas en mode Cram)
+      let repetition = item.repetition || 0;
+      let intervalDays = item.intervalDays || 0;
+      let easeFactor = item.easeFactor || 2.5;
+      let nextReview = item.nextReview || now;
+
+      if (!isCram) {
+        const newState = calculateSM2(item, grade, item.strategy || 'balanced');
+        repetition = newState.repetition;
+        intervalDays = newState.intervalDays;
+        easeFactor = newState.easeFactor;
+        nextReview = newState.nextReview;
+      }
 
       if (item.sourceTable === 'user_kanji_stats') {
-        await kanjiStmt.executeAsync([newState.repetition, newState.intervalDays, newState.easeFactor, newState.nextReview, now, item.dbId]);
+        await kanjiStmt.executeAsync([repetition, intervalDays, easeFactor, nextReview, now, newFailCount, item.dbId]);
       } else if (item.sourceTable === 'kana_stats') {
-        await kanaStmt.executeAsync([newState.repetition, newState.intervalDays, newState.easeFactor, newState.nextReview, now, item.dbId]);
+        await kanaStmt.executeAsync([repetition, intervalDays, easeFactor, nextReview, now, newFailCount, item.dbId]);
       } else if (item.sourceTable === 'custom_cards') {
-        await customStmt.executeAsync([newState.repetition, newState.intervalDays, newState.easeFactor, newState.nextReview, now, item.dbId]);
+        await customStmt.executeAsync([repetition, intervalDays, easeFactor, nextReview, now, newFailCount, item.dbId]);
       }
     }
     

@@ -19,20 +19,34 @@ export interface DashboardStats {
   streak: number;
   dailyGoal: number;
   dailyProgress: number;
+  leechCount: number;
+  rank: { title: string; color: string; icon: string; id: string; totalLearned: number };
 }
 
 export interface UserProfile {
   username: string;
   avatar: string | null;
   banner: string | null;
-  kanji: string | null;
-  reading: string | null;
+  kanji: number;
+  reading: number;
   games_played: number;
   total_correct: number;
   best_score: number;
   created_at: string;
   daily_goal: number;
   learning_strategy: 'intensive' | 'balanced' | 'relaxed';
+  kanji_trace_count: number;
+  show_exams: number;
+  brush_skin: string;
+  app_theme: string;
+}
+
+export function getUserRank(totalLearned: number): { title: string; icon: string; color: string; id: string } {
+  if (totalLearned >= 500) return { title: 'Shogun', icon: '🏯', color: '#8B5CF6', id: 'shogun' };
+  if (totalLearned >= 300) return { title: 'Samouraï', icon: '⚔️', color: '#EF4444', id: 'samurai' };
+  if (totalLearned >= 150) return { title: 'Ronin', icon: '🎋', color: '#4B5563', id: 'ronin' };
+  if (totalLearned >= 50) return { title: 'Apprenti', icon: '🏮', color: '#F59E0B', id: 'apprenti' };
+  return { title: 'Novice', icon: '🌱', color: '#10B981', id: 'novice' };
 }
 
 export interface Radical {
@@ -127,6 +141,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const customToday: any = await db.getFirstAsync('SELECT COUNT(*) as count FROM custom_cards WHERE last_seen LIKE ?', [`${todayStr}%`]);
     const dailyProgress = (kanjiToday?.count || 0) + (kanaToday?.count || 0) + (customToday?.count || 0);
 
+    // 7. Leech Count (3+ fails)
+    const kanjiLeech: any = await db.getFirstAsync('SELECT COUNT(*) as count FROM user_kanji_stats WHERE fail_count >= 3');
+    const kanaLeech: any = await db.getFirstAsync('SELECT COUNT(*) as count FROM kana_stats WHERE srs_fail_count >= 3');
+    const customLeech: any = await db.getFirstAsync('SELECT COUNT(*) as count FROM custom_cards WHERE fail_count >= 3');
+
+    const totalLearned = n5Learned + n4Learned + learnedHiragana + learnedKatakana + customDecksStats.reduce((acc, d) => acc + d.learned, 0);
+    const leechCount = (kanjiLeech?.count || 0) + (kanaLeech?.count || 0) + (customLeech?.count || 0);
+
     return {
       jlptN5: { learned: n5Learned, total: 79 },
       jlptN4: { learned: n4Learned, total: 166 },
@@ -145,7 +167,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       dueKatakana,
       streak,
       dailyGoal,
-      dailyProgress
+      dailyProgress,
+      leechCount,
+      rank: { ...getUserRank(totalLearned), totalLearned }
     };
   } catch (e) {
     console.error("Erreur lors de la récupération des statistiques:", e);
@@ -160,7 +184,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       dueKatakana: 0,
       streak: 0,
       dailyGoal: 20,
-      dailyProgress: 0
+      dailyProgress: 0,
+      leechCount: 0,
+      rank: { ...getUserRank(0), totalLearned: 0 }
     };
   }
 }
@@ -172,7 +198,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
       SELECT 
         username, avatar, banner, kanji, reading, 
         games_played, total_correct, best_score_mixed as best_score, created_at,
-        daily_goal, learning_strategy
+        daily_goal, learning_strategy, kanji_trace_count, show_exams, brush_skin, app_theme
       FROM users 
       LIMIT 1
     `);
@@ -269,6 +295,15 @@ export async function updateLearningStrategy(strategy: 'intensive' | 'balanced' 
     await db.runAsync('UPDATE users SET learning_strategy = ?', [strategy]);
   } catch (e) {
     console.error("Erreur lors de la mise à jour de la stratégie SRS:", e);
+  }
+}
+
+export async function updateKanjiTraceCount(count: number): Promise<void> {
+  const db = await getDb();
+  try {
+    await db.runAsync('UPDATE users SET kanji_trace_count = ?', [count]);
+  } catch (e) {
+    console.error("Erreur lors de la mise à jour du nombre de tracés:", e);
   }
 }
 
@@ -371,4 +406,109 @@ export async function addInteractiveWordToDeck(front: string, back: string, read
   );
 
   return true; // Ajouté avec succès
+}
+
+export async function lookupWord(word: string, reading?: string): Promise<{meaning?: string, reading?: string}> {
+  const db = await getDb();
+  try {
+    // 1. Chercher dans le dictionnaire général
+    let query = "SELECT meaning_fr, reading FROM dictionary WHERE word = ? OR reading = ?";
+    let params = [word, word];
+    
+    if (reading) {
+      query = "SELECT meaning_fr, reading FROM dictionary WHERE word = ? AND reading = ?";
+      params = [word, reading];
+    }
+    
+    const dictResult: any = await db.getFirstAsync(query, params);
+    if (dictResult) {
+      return { 
+        meaning: dictResult.meaning_fr, 
+        reading: dictResult.reading 
+      };
+    }
+
+    // 2. Si non trouvé, chercher dans les Kanjis (si c'est un seul caractère)
+    if (word.length === 1) {
+      const kanjiResult: any = await db.getFirstAsync(
+        "SELECT meanings_fr, readings_on, readings_kun FROM kanji_data WHERE literal = ?",
+        [word]
+      );
+      if (kanjiResult) {
+        return {
+          meaning: kanjiResult.meanings_fr,
+          reading: kanjiResult.readings_on || kanjiResult.readings_kun
+        };
+      }
+    }
+
+    return {};
+  } catch (e) {
+    console.error("Erreur lookupWord:", e);
+    return {};
+  }
+}
+
+export async function getLeechStats(): Promise<number> {
+  const db = await getDb();
+  try {
+    const kanas: any = await db.getFirstAsync("SELECT COUNT(*) as count FROM kana_stats WHERE srs_fail_count >= 3");
+    const kanjis: any = await db.getFirstAsync("SELECT COUNT(*) as count FROM user_kanji_stats WHERE fail_count >= 3");
+    const custom: any = await db.getFirstAsync("SELECT COUNT(*) as count FROM custom_cards WHERE fail_count >= 3");
+    
+    return (kanas?.count || 0) + (kanjis?.count || 0) + (custom?.count || 0);
+  } catch (e) {
+    console.error("Erreur getLeechStats:", e);
+    return 0;
+  }
+}
+
+export async function getLeechItems(): Promise<any[]> {
+  const db = await getDb();
+  const items: any[] = [];
+  
+  try {
+    // 1. Kanas
+    const kanas = await db.getAllAsync(`
+      SELECT 'kana' as type, kana as front, '' as reading, srs_fail_count as fail_count 
+      FROM kana_stats WHERE srs_fail_count >= 3
+    `) as any[];
+    items.push(...kanas);
+
+    // 2. Kanjis
+    const kanjis = await db.getAllAsync(`
+      SELECT 'kanji' as type, kd.literal as front, (kd.readings_on || ' ' || kd.readings_kun) as reading, uks.fail_count 
+      FROM user_kanji_stats uks
+      JOIN kanji_data kd ON uks.kanji_id = kd.id
+      WHERE uks.fail_count >= 3
+    `) as any[];
+    items.push(...kanjis);
+
+    // 3. Custom Cards
+    const custom = await db.getAllAsync(`
+      SELECT 'custom' as type, front, reading, fail_count, back as meaning
+      FROM custom_cards WHERE fail_count >= 3
+    `) as any[];
+    items.push(...custom);
+
+    return items.sort((a, b) => b.fail_count - a.fail_count);
+  } catch (e) {
+    console.error("Erreur getLeechItems:", e);
+    return [];
+  }
+}
+
+export async function updateShowExams(show: boolean): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE users SET show_exams = ?', [show ? 1 : 0]);
+}
+
+export async function updateBrushSkin(skin: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE users SET brush_skin = ?', [skin]);
+}
+
+export async function updateAppTheme(theme: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE users SET app_theme = ?', [theme]);
 }

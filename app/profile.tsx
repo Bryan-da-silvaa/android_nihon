@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, Modal, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { getUserProfile, UserProfile, updateDailyGoal } from '../services/db/queries';
+import { getUserProfile, UserProfile, updateDailyGoal, updateLearningStrategy, updateKanjiTraceCount, updateShowExams, getUserRank } from '../services/db/queries';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, AppTheme } from '../context/ThemeContext';
 
@@ -12,6 +12,7 @@ export default function ProfileScreen() {
   const [isGoalModalVisible, setGoalModalVisible] = useState(false);
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
   const [isStrategyModalVisible, setStrategyModalVisible] = useState(false);
+  const [isTraceModalVisible, setTraceModalVisible] = useState(false);
 
   const loadProfile = async () => {
     const data = await getUserProfile();
@@ -36,9 +37,14 @@ export default function ProfileScreen() {
   };
 
   const handleUpdateStrategy = async (s: 'intensive' | 'balanced' | 'relaxed') => {
-    const { updateLearningStrategy } = require('../services/db/queries');
     await updateLearningStrategy(s);
     setStrategyModalVisible(false);
+    loadProfile();
+  };
+
+  const handleUpdateTraceCount = async (num: number) => {
+    await updateKanjiTraceCount(num);
+    setTraceModalVisible(false);
     loadProfile();
   };
 
@@ -241,6 +247,23 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable 
+              onPress={() => setTraceModalVisible(true)}
+              className={`flex-row items-center justify-between p-5 border-b active:opacity-60 rounded-2xl transition-colors`}
+              style={{ borderBottomColor: colors.hexBorder }}
+            >
+              <View className="flex-row items-center gap-4">
+                <View className="w-10 h-10 bg-orange-500/20 rounded-full items-center justify-center">
+                  <Text className="text-lg">✏️</Text>
+                </View>
+                <View>
+                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>Répétitions Tracé</Text>
+                  <Text className={`text-xs`} style={{ color: colors.hexSubtext }}>{profile?.kanji_trace_count || 10} fois / caractère</Text>
+                </View>
+              </View>
+              <Text className={`font-black text-xl`} style={{ color: colors.hexSubtext }}>{'>'}</Text>
+            </Pressable>
+
+            <Pressable 
               onPress={() => setThemeModalVisible(true)}
               className={`flex-row items-center justify-between p-5 border-b active:opacity-60 rounded-2xl transition-colors`}
               style={{ borderBottomColor: colors.hexBorder }}
@@ -250,21 +273,106 @@ export default function ProfileScreen() {
                   <Text className="text-lg">{themeLabels[theme].icon}</Text>
                 </View>
                 <View>
-                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>Thème de l'app</Text>
+                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>Thème de l&apos;app</Text>
                   <Text className={`text-xs`} style={{ color: colors.hexSubtext }}>{themeLabels[theme].label}</Text>
                 </View>
               </View>
               <Text className={`font-black text-xl`} style={{ color: colors.hexSubtext }}>{'>'}</Text>
             </Pressable>
 
-            <Pressable className={`flex-row items-center justify-between p-5 active:opacity-60 rounded-2xl transition-colors`}>
+            <Pressable 
+              onPress={async () => {
+                const newValue = profile?.show_exams === 1 ? false : true;
+                await updateShowExams(newValue);
+                loadProfile();
+              }}
+              className={`flex-row items-center justify-between p-5 active:opacity-60 rounded-2xl transition-colors`}
+            >
               <View className="flex-row items-center gap-4">
-                <View className="w-10 h-10 bg-red-500/20 rounded-full items-center justify-center">
-                  <Text className="text-lg">🚪</Text>
+                <View className="w-10 h-10 bg-amber-500/20 rounded-full items-center justify-center">
+                  <Text className="text-lg">🔥</Text>
                 </View>
-                <Text className="text-red-400 font-bold text-lg">Déconnexion</Text>
+                <View>
+                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>Section Examens</Text>
+                  <Text className={`text-xs`} style={{ color: colors.hexSubtext }}>{profile?.show_exams === 1 ? 'Affichée' : 'Masquée'}</Text>
+                </View>
               </View>
+              <Ionicons 
+                name={profile?.show_exams === 1 ? "eye-outline" : "eye-off-outline"} 
+                size={20} 
+                color={profile?.show_exams === 1 ? colors.hexAccent : colors.hexSubtext} 
+              />
             </Pressable>
+          </View>
+
+          <View className="flex-row items-center justify-between mb-4 ml-2">
+            <Text className={`text-xs font-black tracking-[0.2em]`} style={{ color: colors.hexSubtext }}>
+              BOUTIQUE DE STYLES
+            </Text>
+            <View className="bg-amber-500/20 px-3 py-1 rounded-full border border-amber-500/30">
+              <Text className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                {getUserRank(profile?.total_correct || 0).title}
+              </Text>
+            </View>
+          </View>
+
+          <View 
+            className={`rounded-[2rem] p-4 border mb-10 shadow-xl`}
+            style={{ backgroundColor: colors.hexCard, borderColor: colors.hexBorder }}
+          >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+              {[
+                { id: 'classic', name: 'Classique', icon: '🖌️', rank: 'novice', color: colors.hexText },
+                { id: 'sumie', name: 'Sumi-e', icon: '🎋', rank: 'ronin', color: '#4B5563' },
+                { id: 'gold', name: 'Or Pur', icon: '✨', rank: 'samurai', color: '#FBBF24' },
+                { id: 'neon', name: 'Néon', icon: '🌌', rank: 'shogun', color: '#6366F1' },
+              ].map((skin) => {
+                const userPoints = profile?.total_correct || 0;
+                const rankInfo = getUserRank(userPoints);
+                const ranks = ['novice', 'apprenti', 'ronin', 'samurai', 'shogun'];
+                const isLocked = ranks.indexOf(skin.rank) > ranks.indexOf(rankInfo.id);
+                const isSelected = profile?.brush_skin === skin.id;
+
+                return (
+                  <Pressable
+                    key={skin.id}
+                    onPress={async () => {
+                      if (isLocked) {
+                        Alert.alert("Style Verrouillé", `Débloque le rang ${skin.rank.toUpperCase()} pour utiliser ce style !`);
+                        return;
+                      }
+                      const { updateBrushSkin } = require('../services/db/queries');
+                      await updateBrushSkin(skin.id);
+                      loadProfile();
+                    }}
+                    className="mr-4 items-center"
+                    style={{ width: 100 }}
+                  >
+                    <View 
+                      className={`w-20 h-20 rounded-3xl items-center justify-center mb-2 border-2 relative`}
+                      style={{ 
+                        backgroundColor: isSelected ? skin.color + '20' : colors.hexBgSecondary,
+                        borderColor: isSelected ? skin.color : 'transparent',
+                        opacity: isLocked ? 0.4 : 1
+                      }}
+                    >
+                      <Text className="text-3xl">{skin.icon}</Text>
+                      {isLocked && (
+                        <View className="absolute inset-0 items-center justify-center bg-black/20 rounded-3xl">
+                          <Ionicons name="lock-closed" size={20} color="white" />
+                        </View>
+                      )}
+                    </View>
+                    <Text 
+                      className={`text-[10px] font-black uppercase tracking-tighter text-center`} 
+                      style={{ color: isSelected ? skin.color : colors.hexSubtext }}
+                    >
+                      {skin.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
 
           <Text className={`text-xs font-black mb-4 tracking-[0.2em] ml-2`} style={{ color: colors.hexSubtext }}>
@@ -302,7 +410,7 @@ export default function ProfileScreen() {
                   <Ionicons name="download-outline" size={20} color="#10b981" />
                 </View>
                 <View>
-                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>Sauvegarder sur l'appareil</Text>
+                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>Sauvegarder sur l&apos;appareil</Text>
                   <Text className={`text-xs`} style={{ color: colors.hexSubtext }}>Choisir un dossier local</Text>
                 </View>
               </View>
@@ -413,6 +521,38 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      <Modal visible={isTraceModalVisible} transparent animationType="slide">
+        <View className="flex-1 bg-black/60 justify-end">
+          <View 
+            className={`rounded-t-[3rem] p-8 border-t`}
+            style={{ backgroundColor: colors.hexCard, borderTopColor: colors.hexBorder }}
+          >
+            <View className="flex-row justify-between items-center mb-8">
+              <Text className={`text-2xl font-black`} style={{ color: colors.hexText }}>Répétitions du Tracé</Text>
+              <Pressable onPress={() => setTraceModalVisible(false)}><Ionicons name="close" size={28} color={colors.hexSubtext} /></Pressable>
+            </View>
+            <Text className="text-xs mb-6 font-bold" style={{ color: colors.hexSubtext }}>
+              Nombre de fois où tu dois tracer un nouveau Kanji pour le valider.
+            </Text>
+            <View className="flex-row flex-wrap gap-3 mb-10">
+              {[1, 3, 5, 10].map((num) => (
+                <Pressable
+                  key={num}
+                  onPress={() => handleUpdateTraceCount(num)}
+                  className={`px-6 py-4 rounded-2xl border-2 flex-1 items-center`}
+                  style={{ 
+                    backgroundColor: (profile?.kanji_trace_count || 10) === num ? colors.hexAccent + '1a' : colors.hexBgSecondary,
+                    borderColor: (profile?.kanji_trace_count || 10) === num ? colors.hexAccent : 'transparent'
+                  }}
+                >
+                  <Text className={`font-black text-lg`} style={{ color: (profile?.kanji_trace_count || 10) === num ? colors.hexAccent : colors.hexSubtext }}>{num}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={isThemeModalVisible} transparent animationType="slide">
         <View className="flex-1 bg-black/60 justify-end">
           <View 
@@ -420,24 +560,60 @@ export default function ProfileScreen() {
             style={{ backgroundColor: colors.hexCard, borderTopColor: colors.hexBorder }}
           >
             <View className="flex-row justify-between items-center mb-8">
-              <Text className={`text-2xl font-black`} style={{ color: colors.hexText }}>Thème de l'application</Text>
+              <Text className={`text-2xl font-black`} style={{ color: colors.hexText }}>Thème de l&apos;application</Text>
               <Pressable onPress={() => setThemeModalVisible(false)}><Ionicons name="close" size={28} color={colors.hexSubtext} /></Pressable>
             </View>
             <View className="gap-4 mb-10">
-              {(Object.keys(themeLabels) as AppTheme[]).map((t) => (
-                <Pressable
-                  key={t}
-                  onPress={() => handleUpdateTheme(t)}
-                  className={`p-5 rounded-2xl border-2 flex-row items-center gap-4`}
-                  style={{ 
-                    backgroundColor: theme === t ? colors.hexAccent + '1a' : colors.hexBgSecondary,
-                    borderColor: theme === t ? colors.hexAccent : 'transparent'
-                  }}
-                >
-                  <Text className="text-2xl">{themeLabels[t].icon}</Text>
-                  <Text className={`font-black text-lg`} style={{ color: theme === t ? colors.hexAccent : colors.hexSubtext }}>{themeLabels[t].label}</Text>
-                </Pressable>
-              ))}
+              {(Object.keys(themeLabels) as AppTheme[]).map((t) => {
+                const userPoints = profile?.total_correct || 0;
+                const rankInfo = getUserRank(userPoints);
+                const ranks = ['novice', 'apprenti', 'ronin', 'samurai', 'shogun'];
+                
+                const themeRequiredRank: Record<AppTheme, string> = {
+                  indigo_zen: 'novice',
+                  sakura_night: 'apprenti',
+                  sakura_white: 'ronin',
+                  kyoto_gold: 'samurai'
+                };
+
+                const isLocked = ranks.indexOf(themeRequiredRank[t]) > ranks.indexOf(rankInfo.id);
+
+                return (
+                  <Pressable
+                    key={t}
+                    onPress={() => {
+                      if (isLocked) {
+                        Alert.alert("Thème Verrouillé", `Débloque le rang ${themeRequiredRank[t].toUpperCase()} pour utiliser ce thème !`);
+                        return;
+                      }
+                      handleUpdateTheme(t);
+                    }}
+                    className={`p-5 rounded-2xl border-2 flex-row items-center gap-4`}
+                    style={{ 
+                      backgroundColor: theme === t ? colors.hexAccent + '1a' : colors.hexBgSecondary,
+                      borderColor: theme === t ? colors.hexAccent : 'transparent',
+                      opacity: isLocked ? 0.5 : 1
+                    }}
+                  >
+                    <View className="relative">
+                      <Text className="text-2xl">{themeLabels[t].icon}</Text>
+                      {isLocked && (
+                        <View className="absolute -bottom-1 -right-1 bg-black/40 rounded-full p-0.5">
+                          <Ionicons name="lock-closed" size={10} color="white" />
+                        </View>
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <Text className={`font-black text-lg`} style={{ color: theme === t ? colors.hexAccent : colors.hexSubtext }}>{themeLabels[t].label}</Text>
+                      {isLocked && (
+                        <Text className="text-[10px] font-bold opacity-50 uppercase" style={{ color: colors.hexSubtext }}>
+                          Requis : {themeRequiredRank[t]}
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         </View>

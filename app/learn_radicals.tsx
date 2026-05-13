@@ -64,7 +64,8 @@ export default function LearnRadicalsScreen() {
 				distractors: distractors.sort(() => Math.random() - 0.5),
 				repetition: 0,
 				intervalDays: 0,
-				easeFactor: 2.5
+				easeFactor: 2.5,
+				failCount: 0
 			};
 		});
 		setQuizItems(items.sort(() => Math.random() - 0.5));
@@ -90,7 +91,7 @@ export default function LearnRadicalsScreen() {
 				setSelectedAnswer(null);
 				setIsCorrect(null);
 			} else {
-				finishLearning([...quizItems.slice(0, -1), { ...quizItems[currentIndex], isCorrect: correct }]);
+				finishLearning([...quizItems.slice(0, -1), { ...quizItems[currentIndex], isCorrect: correct, failCount: quizItems[currentIndex].failCount }]);
 			}
 		}, 1200);
 	};

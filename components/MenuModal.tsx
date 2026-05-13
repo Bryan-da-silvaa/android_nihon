@@ -93,6 +93,16 @@ export function MenuModal({ visible, onClose }: MenuModalProps) {
               className="active:opacity-50 flex-row items-center"
               onPress={() => {
                 onClose();
+                router.push('/news');
+              }}
+            >
+              <Text className={`text-xl font-bold opacity-80`} style={{ color: colors.hexText }}>📰 Actualités</Text>
+            </Pressable>
+
+            <Pressable 
+              className="active:opacity-50 flex-row items-center"
+              onPress={() => {
+                onClose();
                 router.push('/decks');
               }}
             >

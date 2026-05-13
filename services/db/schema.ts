@@ -51,9 +51,29 @@ export async function initializeSchema() {
         streak_count INTEGER DEFAULT 0,
         last_study_date TEXT DEFAULT NULL,
         daily_goal INTEGER DEFAULT 20,
-        app_theme TEXT DEFAULT 'indigo_zen'
+        app_theme TEXT DEFAULT 'indigo_zen',
+        kanji_trace_count INTEGER DEFAULT 10,
+        brush_skin TEXT DEFAULT 'classic',
+        show_exams INTEGER DEFAULT 1
       );
     `);
+
+    // Migration : Ajout de colonnes manquantes si nécessaire
+    try {
+      const userCols: any[] = await db.getAllAsync('PRAGMA table_info(users)');
+      const colNames = userCols.map(c => c.name);
+      
+      if (!colNames.includes('brush_skin')) {
+        await db.execAsync("ALTER TABLE users ADD COLUMN brush_skin TEXT DEFAULT 'classic'");
+        console.log("Migration: Added brush_skin column");
+      }
+      if (!colNames.includes('show_exams')) {
+        await db.execAsync("ALTER TABLE users ADD COLUMN show_exams INTEGER DEFAULT 1");
+        console.log("Migration: Added show_exams column");
+      }
+    } catch (migError) {
+      console.warn("Migration failed or already applied:", migError);
+    }
 
     // 3. user_vocabulary
     await db.execAsync(`
@@ -97,6 +117,7 @@ export async function initializeSchema() {
         srs_streak INTEGER DEFAULT 0,
         srs_lapses INTEGER DEFAULT 0,
         srs_last_quality INTEGER DEFAULT NULL,
+        srs_fail_count INTEGER DEFAULT 0,
         UNIQUE (user_id, kana)
       );
     `);
@@ -147,6 +168,7 @@ export async function initializeSchema() {
         interval_days REAL DEFAULT 0,
         repetition INTEGER DEFAULT 0,
         ease_factor REAL DEFAULT 2.5,
+        fail_count INTEGER DEFAULT 0,
         last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (user_id, kanji_id)
       );
@@ -173,9 +195,26 @@ export async function initializeSchema() {
         repetition INTEGER DEFAULT 0,
         interval_days REAL DEFAULT 0,
         ease_factor REAL DEFAULT 2.5,
+        fail_count INTEGER DEFAULT 0,
         next_review TEXT DEFAULT CURRENT_TIMESTAMP,
         last_seen TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (deck_id) REFERENCES custom_decks(id) ON DELETE CASCADE
+      );
+    `);
+
+    // 11. articles (News & Audio Immersion)
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        title_ruby TEXT,
+        content TEXT,
+        image_url TEXT,
+        audio_url TEXT,
+        publication_date TEXT,
+        source_url TEXT,
+        timestamps TEXT, -- JSON stringifié [{text, start, end}]
+        is_news INTEGER DEFAULT 1
       );
     `);
 
@@ -198,6 +237,27 @@ export async function initializeSchema() {
 
     try {
       await db.execAsync("ALTER TABLE users ADD COLUMN app_theme TEXT DEFAULT 'indigo_zen';");
+    } catch (e) {}
+
+    // Ajout des fail_count pour le mode Anti-Sangsues (Leeches)
+    try {
+      await db.execAsync("ALTER TABLE kana_stats ADD COLUMN srs_fail_count INTEGER DEFAULT 0;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE user_kanji_stats ADD COLUMN fail_count INTEGER DEFAULT 0;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE custom_cards ADD COLUMN fail_count INTEGER DEFAULT 0;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE users ADD COLUMN kanji_trace_count INTEGER DEFAULT 10;");
+    } catch (e) {}
+
+    try {
+      await db.execAsync("ALTER TABLE users ADD COLUMN show_exams INTEGER DEFAULT 1;");
     } catch (e) {}
 
     console.log("✅ [SQLite] Schéma initialisé avec succès.");

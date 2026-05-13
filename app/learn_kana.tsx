@@ -67,7 +67,8 @@ export default function LearnKanaScreen() {
 				distractors: distractors.sort(() => Math.random() - 0.5),
 				repetition: 0,
 				intervalDays: 0,
-				easeFactor: 2.5
+				easeFactor: 2.5,
+				failCount: 0
 			};
 		});
 		setQuizItems(items.sort(() => Math.random() - 0.5));
@@ -267,7 +268,7 @@ export default function LearnKanaScreen() {
 					className="w-full py-6 rounded-[2rem] items-center shadow-xl active:scale-95 transition-all"
 					style={{ backgroundColor: colors.hexAccent }}
 				>
-					<Text className="text-white font-black text-lg tracking-widest uppercase">Retour à l'accueil</Text>
+					<Text className="text-white font-black text-lg tracking-widest uppercase">Retour à l&apos;accueil</Text>
 				</Pressable>
 			</View>
 		);

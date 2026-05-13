@@ -54,7 +54,7 @@ export default function SearchScreen() {
           Dictionnaire par Tracé
         </Text>
         <Text className="text-base opacity-70 mb-8 self-start" style={{ color: colors.hexSubtext }}>
-          Dessinez un Kanji que vous ne connaissez pas. L'IA devinera ce que c'est !
+          Dessinez un Kanji que vous ne connaissez pas. L&apos;IA devinera ce que c&apos;est !
         </Text>
 
         <DigitalInkCanvas onRecognized={handleRecognized} />

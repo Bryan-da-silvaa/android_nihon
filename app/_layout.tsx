@@ -2,14 +2,25 @@ import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LogBox } from 'react-native';
+import { ReanimatedLogLevel, configureReanimatedLogger } from 'react-native-reanimated';
 import '../global.css';
+
+// Désactiver le mode strict de Reanimated pour éviter les warnings de lecture pendant le rendu
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
+
+LogBox.ignoreLogs(['[Reanimated] Reading from `value` during component render']);
 
 import { initializeSchema } from '../services/db/schema';
 import { seedDatabaseIfNeeded } from '../services/db/seeder';
 import { CustomNavbar } from '../components/CustomNavbar';
 import { MenuModal } from '../components/MenuModal';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-
+import { AudioProvider } from '../context/AudioContext';
+import { MiniAudioPlayer } from '../components/MiniAudioPlayer';
 import * as SplashScreen from 'expo-splash-screen';
 
 SplashScreen.preventAutoHideAsync();
@@ -50,6 +61,8 @@ function AppContent() {
 				<Stack.Screen name="reading" />
 				<Stack.Screen name="search" />
 			</Stack>
+
+			<MiniAudioPlayer />
 		</View>
 	);
 }
@@ -60,6 +73,19 @@ export default function RootLayout() {
 	useEffect(() => {
 		async function setupDatabase() {
 			try {
+				// Configuration audio pour le background
+				try {
+					const { setAudioModeAsync } = require('expo-audio');
+					await setAudioModeAsync({
+						playsInSilentMode: true,
+						interruptionMode: 'doNotMix',
+						interruptionModeAndroid: 'doNotMix',
+						staysActiveInBackground: true
+					});
+				} catch (ae) {
+					console.warn("Audio category setup failed:", ae);
+				}
+
 				await initializeSchema();
 				await seedDatabaseIfNeeded();
 				
@@ -113,7 +139,9 @@ export default function RootLayout() {
 
 	return (
 		<ThemeProvider>
-			<AppContent />
+			<AudioProvider>
+				<AppContent />
+			</AudioProvider>
 		</ThemeProvider>
 	);
 }

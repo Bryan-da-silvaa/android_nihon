@@ -17,7 +17,12 @@
     },
     "android": {
       "package": "com.tabitha.nihon",
-      "permissions": ["RECORD_AUDIO"],
+      "permissions": [
+        "RECORD_AUDIO",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "WAKE_LOCK"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#020617",
         "foregroundImage": "./assets/images/icon.png"
@@ -43,7 +48,16 @@
           "backgroundColor": "#020617"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "android": {
+            "foregroundServiceType": "mediaPlayback"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

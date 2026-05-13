@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useQuizEngine } from '../hooks/useQuizEngine';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
@@ -9,53 +9,32 @@ import { useTheme } from '../context/ThemeContext';
 import { KanjiCanvas } from '../components/KanjiCanvas';
 import { VoiceButton } from '../components/VoiceButton';
 
-export default function QuizScreen() {
+export default function LeechSessionScreen() {
 	const router = useRouter();
 	const { colors } = useTheme();
-	const params = useLocalSearchParams();
-	const deckType = (params.type as 'kanji' | 'hiragana' | 'katakana' | 'custom') || 'kanji';
-	const jlpt = params.jlpt ? parseInt(params.jlpt as string) : undefined;
-	const deckId = params.deckId ? parseInt(params.deckId as string) : undefined;
 
-	const isLearning = params.learning === 'true';
-	const isCram = params.mode === 'cram';
-	const isBoss = params.mode === 'boss';
-
+	// Session "leech" (Sangsues) avec un maximum de 20 items
 	const {
 		isLoading, isFinished, isSaving, currentCard,
 		choices, currentIndex, totalCards, score, handleAnswer,
-		strategy, kanjiTraceCount
-	} = useQuizEngine(deckType, 20, jlpt, deckId, isLearning, isCram, isBoss);
+		kanjiTraceCount
+	} = useQuizEngine('leech', 20);
 
 	useEffect(() => {
-		if (isFinished && !isCram && !isBoss) {
-			const { scheduleSRSReviewNotification, updateAppBadge, scheduleTomorrowStreakReminder } = require('../services/notifications');
+		if (isFinished) {
 			const { refreshWidgetData } = require('../services/widget');
-			const { updateUserStreak } = require('../services/db/queries');
-			
-			updateAppBadge();
-			scheduleSRSReviewNotification();
 			refreshWidgetData();
-
-			// Mettre à jour le streak et programmer le rappel de demain
-			const updateStreakData = async () => {
-				try {
-					await updateUserStreak();
-					await scheduleTomorrowStreakReminder();
-				} catch (e) {
-					console.warn("Erreur lors de la mise à jour du streak:", e);
-				}
-			};
-			updateStreakData();
 		}
-	}, [isFinished, isCram]);
+	}, [isFinished]);
 
 	const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
 	const [isDrawingMode, setIsDrawingMode] = useState(false);
 	const [traceRepetitions, setTraceRepetitions] = useState(0);
 	const REQUIRED_TRACES = kanjiTraceCount;
 
-	const isTracePhase = isLearning && traceRepetitions < REQUIRED_TRACES && deckType === 'kanji';
+	// Pour les sangsues, on n'impose pas de phase de tracé forcée, 
+	// mais on laisse l'outil pinceau disponible comme dans le quiz normal.
+	const isTracePhase = false; 
 
 	useEffect(() => {
 		if (isFinished) {
@@ -66,7 +45,7 @@ export default function QuizScreen() {
 	if (isLoading) {
 		return (
 			<View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.hexBg }}>
-				<Text className="font-bold animate-pulse uppercase tracking-[0.3em]" style={{ color: colors.hexAccent }}>Chargement...</Text>
+				<Text className="font-bold animate-pulse uppercase tracking-[0.3em]" style={{ color: colors.hexAccent }}>Chargement Focus...</Text>
 			</View>
 		);
 	}
@@ -78,14 +57,14 @@ export default function QuizScreen() {
 					className="w-24 h-24 rounded-full items-center justify-center mb-6" 
 					style={{ backgroundColor: colors.hexBgSecondary, borderWidth: 2, borderColor: colors.hexBorder }}
 				>
-					<Text className="text-5xl">{isBoss ? '🔥' : '💮'}</Text>
+					<Text className="text-5xl">🎯</Text>
 				</View>
 				<Text className="text-3xl font-black mb-2 text-center" style={{ color: colors.hexText }}>お疲れ様 !</Text>
-				<Text className="text-sm uppercase tracking-[0.3em] font-bold mb-12" style={{ color: colors.hexAccent }}>Session Terminée</Text>
+				<Text className="text-sm uppercase tracking-[0.3em] font-bold mb-12" style={{ color: colors.hexAccent }}>Points Faibles Corrigés</Text>
 
 				{isSaving ? (
 					<View className="items-center">
-						<Text className="font-bold animate-pulse mb-4" style={{ color: colors.hexAccent }}>Mise à jour du moteur SRS...</Text>
+						<Text className="font-bold animate-pulse mb-4" style={{ color: colors.hexAccent }}>Mise à jour des stats...</Text>
 						<View className="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden">
 							<View className="h-full bg-emerald-500 w-1/2 animate-pulse" />
 						</View>
@@ -96,7 +75,7 @@ export default function QuizScreen() {
 						className="px-10 py-5 rounded-[2rem] active:opacity-80 active:scale-95 transition-all shadow-xl"
 						style={{ backgroundColor: colors.hexAccent }}
 					>
-						<Text className="text-white font-black text-xl tracking-widest uppercase">Continuer</Text>
+						<Text className="text-white font-black text-xl tracking-widest uppercase">Terminer</Text>
 					</Pressable>
 				)}
 			</View>
@@ -108,7 +87,6 @@ export default function QuizScreen() {
 		setSelectedChoice(choice);
 		const isCorrect = choice === currentCard?.answer;
 
-		// Feedback Haptique "Mastery"
 		if (isCorrect) {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		} else {
@@ -123,26 +101,12 @@ export default function QuizScreen() {
 			Speech.speak(textToSpeak, { language: 'ja-JP', rate: 0.9 });
 		}
 
-		// Automate SRS Grade for MCQ: Correct -> Good (3), Wrong -> Again (1)
-		const grade = isCorrect ? 3 : 1;
-
 		setTimeout(() => {
 			setSelectedChoice(null);
-			handleAnswer(isCorrect, grade);
+			handleAnswer(isCorrect, isCorrect ? 3 : 1);
 			setIsDrawingMode(false);
-			setTraceRepetitions(0); // Reset pour le prochain Kanji
+			setTraceRepetitions(0);
 		}, 600);
-	};
-
-	const onTraceComplete = () => {
-		const newCount = traceRepetitions + 1;
-		setTraceRepetitions(newCount);
-		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-		
-		if (newCount === REQUIRED_TRACES) {
-			// Petite pause avant de passer au quiz
-			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-		}
 	};
 
 	const replayAudio = () => {
@@ -183,8 +147,8 @@ export default function QuizScreen() {
 							</Pressable>
 						)}
 						<View className="items-end">
-							<Text className="font-black text-[10px] tracking-widest uppercase" style={{ color: isBoss ? '#F59E0B' : colors.hexSubtext }}>
-								{isBoss ? 'BOSS FINAL 🔥' : 'Progression'}
+							<Text className="font-black text-[10px] tracking-widest uppercase" style={{ color: colors.hexSubtext }}>
+								Mode Focus
 							</Text>
 							<Text className="font-black text-lg" style={{ color: colors.hexText }}>
 								{currentIndex + 1} <Text className="text-sm opacity-40">/ {totalCards}</Text>
@@ -204,26 +168,25 @@ export default function QuizScreen() {
 			</View>
 
 			<View className="flex-1 px-6 justify-center pb-12">
-				{(isDrawingMode || isTracePhase) && currentCard ? (
+				{isDrawingMode && currentCard ? (
 					<View className="flex-1 justify-center items-center mb-6">
 						<View className="mb-4 items-center">
 							<Text style={{ color: colors.hexAccent, fontWeight: '900', fontSize: 12 }} className="uppercase tracking-[0.2em]">
-								{isTracePhase ? `Répétition ${traceRepetitions + 1} / ${REQUIRED_TRACES}` : "Entraînement Libre"}
+								Entraînement Libre
 							</Text>
 							<Text style={{ color: colors.hexSubtext, textAlign: 'center' }} className="text-sm">
-								{isTracePhase ? "Trace le caractère pour le mémoriser" : "Entraîne-toi à tracer le caractère !"}
+								Renforce ta mémoire musculaire !
 							</Text>
 						</View>
 						
 						<KanjiCanvas 
 							targetKanji={currentCard.kanjiLiteral || currentCard.prompt} 
 							colors={colors}
-							onComplete={onTraceComplete}
+							onComplete={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}
 						/>
 					</View>
 				) : (
 					<>
-						{/* Prompt Card Area - Centré avec le bas */}
 						<View className="w-full justify-center mb-8 mt-4">
 							<View 
 								className="rounded-[3rem] p-6 items-center border shadow-lg min-h-[160px] justify-center relative overflow-hidden"
@@ -231,7 +194,6 @@ export default function QuizScreen() {
 							>
 								<View className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: colors.hexAccent, opacity: 0.1 }} />
 								
-								{/* Bouton Audio - Repositionné pour respecter les coins arrondis */}
 								<Pressable onPress={replayAudio} className="absolute top-6 right-6 p-2 rounded-xl active:scale-90 z-10" style={{ backgroundColor: colors.hexBgSecondary }}>
 									<Ionicons name="volume-medium" size={24} color={colors.hexAccent} />
 								</Pressable>
@@ -240,7 +202,6 @@ export default function QuizScreen() {
 									{currentCard?.questionType.replace(/_/g, ' ')}
 								</Text>
 								
-								{/* Texte du prompt avec padding pour éviter le bouton audio */}
 								<View className="w-full px-6 items-center justify-center">
 									<Text 
 										className="font-black text-center" 
@@ -256,12 +217,11 @@ export default function QuizScreen() {
 					</>
 				)}
 
-				{/* Voice Recognition Area */}
-				{!isTracePhase && currentCard && (
+				{/* Voice Recognition */}
+				{!isDrawingMode && currentCard && (
 					<View className="items-center mb-2">
 						<VoiceButton onResult={(transcripts) => {
 							if (selectedChoice !== null || !currentCard) return;
-							
 							const possibleMatches = [
 								currentCard.answer?.toLowerCase(),
 								currentCard.prompt?.toLowerCase(),
@@ -269,38 +229,19 @@ export default function QuizScreen() {
 								currentCard.kanjiLiteral?.toLowerCase()
 							].filter(Boolean);
 
-							// On vérifie si n'importe laquelle des alternatives renvoyées par Google matche
 							const isMatch = transcripts.some(text => {
 								const input = text.trim().toLowerCase();
-								
-								// 1. Match exact ou inclusion directe
-								if (possibleMatches.some(match => input === match || input.includes(match!))) return true;
-
-								// 2. Mapping de secours pour les Kanas courts qui sortent souvent en Kanji ou Chiffres (ex: "ni" -> "2")
-								const KANA_MAP: Record<string, string> = { 
-									'二': 'に', '2': 'に', '四': 'し', '4': 'し', '九': 'く', '9': 'く', '五': 'ご', '5': 'ご', 
-									'一': 'いち', '1': 'いち', '三': 'さん', '3': 'さん', '六': 'ろく', '6': 'ろく', 
-									'七': 'なな', '7': 'なな', '八': 'はち', '8': 'はち', '十': 'じゅう', '10': 'じゅう'
-								};
-								
-								if (KANA_MAP[input] && possibleMatches.includes(KANA_MAP[input])) return true;
-
-								return false;
+								return possibleMatches.some(match => input === match || input.includes(match!));
 							});
 
-							if (isMatch) {
-								onChoiceSelect(currentCard.answer);
-							} else {
-								// Feedback léger si rien n'est reconnu
-								Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-								console.log("Voice No Match. Input candidates:", transcripts, "Expected:", possibleMatches);
-							}
+							if (isMatch) onChoiceSelect(currentCard.answer);
+							else Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 						}} />
 					</View>
 				)}
 
-				{/* Choices Area - Hidden during trace phase */}
-				{!isTracePhase && (
+				{/* Choices */}
+				{!isDrawingMode && (
 					<View className="flex-col gap-3">
 						{choices.map((choice, idx) => {
 							let bgColor = colors.hexCard;
@@ -329,11 +270,7 @@ export default function QuizScreen() {
 									className="py-4 px-6 rounded-[1.6rem] border-2 items-center justify-center active:scale-[0.98] transition-all shadow-sm"
 									style={{ backgroundColor: bgColor, borderColor: borderColor }}
 								>
-									<Text 
-										className="text-base text-center font-bold" 
-										style={{ color: textColor }}
-										numberOfLines={2}
-									>
+									<Text className="text-base text-center font-bold" style={{ color: textColor }} numberOfLines={2}>
 										{choice}
 									</Text>
 								</Pressable>

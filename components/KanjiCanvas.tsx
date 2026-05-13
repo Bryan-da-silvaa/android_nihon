@@ -15,15 +15,24 @@ interface Props {
   expectedStrokes?: number;
   onComplete?: (strokeCount: number, score?: number) => void;
   colors: any;
+  brushSkin?: string;
 }
 
-export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onComplete, colors }) => {
+const BRUSH_STYLES: Record<string, { strokeWidth: number; opacity?: number; glowColor?: string; stroke?: string }> = {
+  classic: { strokeWidth: 3 },
+  sumie: { strokeWidth: 5, opacity: 0.7, stroke: '#4B5563' },
+  gold: { strokeWidth: 4, stroke: '#FBBF24' },
+  neon: { strokeWidth: 4, stroke: '#6366F1' },
+};
+
+export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onComplete, colors, brushSkin = 'classic' }) => {
   const [paths, setPaths] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState<string>('');
   const [strokeCount, setStrokeCount] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
 
+  const skinStyle = BRUSH_STYLES[brushSkin] || BRUSH_STYLES.classic;
   const strokes = getKanjiStrokes(targetKanji);
 
   const panGesture = Gesture.Pan()
@@ -53,6 +62,23 @@ export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onC
     setStrokeCount(0);
     // On ne reset pas lastScore tout de suite pour qu'il reste visible un petit moment
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const renderPath = (d: string, key?: string | number) => {
+    const strokeColor = skinStyle.stroke || colors.hexAccent || "#8b5cf6";
+    
+    return (
+      <Path
+        key={key}
+        d={d}
+        stroke={strokeColor}
+        strokeWidth={skinStyle.strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        opacity={skinStyle.opacity || 1}
+      />
+    );
   };
 
   return (
@@ -122,27 +148,8 @@ export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onC
               })}
 
               {/* TRAITS DE L'UTILISATEUR */}
-              {paths.map((path, index) => (
-                <Path
-                  key={index}
-                  d={path}
-                  stroke={colors.hexAccent || "#8b5cf6"}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              ))}
-              {currentPath ? (
-                <Path
-                  d={currentPath}
-                  stroke={colors.hexAccent || "#8b5cf6"}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              ) : null}
+              {paths.map((path, index) => renderPath(path, index))}
+              {currentPath ? renderPath(currentPath, 'current') : null}
             </Svg>
           </View>
         </GestureDetector>
