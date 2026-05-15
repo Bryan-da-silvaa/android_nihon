@@ -27,11 +27,13 @@ cd android
 
 if [ "$CHOICE" == "1" ] || [ "$CHOICE" == "3" ]; then
     echo -e "${BLUE}🏗️  Build DEV...${NC}"
+    export APP_VARIANT=development
     ./gradlew assembleDebug
 fi
 
 if [ "$CHOICE" == "2" ] || [ "$CHOICE" == "3" ]; then
     echo -e "${BLUE}🏗️  Build PROD...${NC}"
+    export APP_VARIANT=production
     ./gradlew assembleRelease
 fi
 

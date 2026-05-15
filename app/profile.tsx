@@ -264,6 +264,23 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable 
+              onPress={() => router.push('/ai-settings')}
+              className={`flex-row items-center justify-between p-5 border-b active:opacity-60 rounded-2xl transition-colors`}
+              style={{ borderBottomColor: colors.hexBorder }}
+            >
+              <View className="flex-row items-center gap-4">
+                <View className="w-10 h-10 bg-indigo-500/20 rounded-full items-center justify-center">
+                  <Ionicons name="hardware-chip-outline" size={20} color="#818cf8" />
+                </View>
+                <View>
+                  <Text className={`font-bold text-lg`} style={{ color: colors.hexText }}>IA Sensei Locale</Text>
+                  <Text className={`text-xs`} style={{ color: colors.hexSubtext }}>Configuration & Téléchargement</Text>
+                </View>
+              </View>
+              <Text className={`font-black text-xl`} style={{ color: colors.hexSubtext }}>{'>'}</Text>
+            </Pressable>
+
+            <Pressable 
               onPress={() => setThemeModalVisible(true)}
               className={`flex-row items-center justify-between p-5 border-b active:opacity-60 rounded-2xl transition-colors`}
               style={{ borderBottomColor: colors.hexBorder }}

@@ -1,0 +1,67 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+group = 'expo.modules.localsensei'
+version = '1.0.0'
+
+buildscript {
+  ext {
+    kotlinVersion = "2.2.20"
+  }
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20")
+  }
+  def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+  if (expoModulesCorePlugin.exists()) {
+    apply from: expoModulesCorePlugin
+    applyKotlinExpoModulesCorePlugin()
+  }
+}
+
+configurations.all {
+  resolutionStrategy {
+    force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.20"
+    force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.2.20"
+    force "org.jetbrains.kotlin:kotlin-stdlib:2.2.20"
+  }
+}
+
+android {
+  namespace "expo.modules.localsensei"
+  compileSdkVersion safeExtGet("compileSdkVersion", 34)
+  
+  defaultConfig {
+    minSdkVersion safeExtGet("minSdkVersion", 24) // LiteRT-LM requires API 24+
+    targetSdkVersion safeExtGet("targetSdkVersion", 34)
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+    languageVersion = '2.2'
+    apiVersion = '2.2'
+    freeCompilerArgs += [
+      "-Xskip-metadata-version-check"
+    ]
+  }
+}
+
+dependencies {
+  implementation project(':expo-modules-core')
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${safeExtGet('kotlinVersion', '1.8.10')}"
+  
+  // LiteRT-LM for local LLM
+  implementation("com.google.ai.edge.litertlm:litertlm-android:0.11.0")
+}
+
+def safeExtGet(prop, fallback) {
+  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}

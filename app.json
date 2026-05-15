@@ -27,11 +27,12 @@
         "backgroundColor": "#020617",
         "foregroundImage": "./assets/images/icon.png"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
       "navigationBar": {
         "visible": "immersive"
-      }
+      },
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "output": "static",
@@ -55,6 +56,14 @@
           "enableBackgroundPlayback": true,
           "android": {
             "foregroundServiceType": "mediaPlayback"
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.2.20"
           }
         }
       ]
