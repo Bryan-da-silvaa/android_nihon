@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { addInteractiveWordToDeck } from '../services/db/queries';
 
+import { clean } from '../services/db/utils';
+
 // Import local pour l'instant
 const storiesData = require('../assets/data/stories.json');
 
@@ -105,7 +107,7 @@ export default function ReadingScreen() {
               <View>
                 {selectedWord?.reading && (
                   <Text className="text-lg font-bold opacity-70 mb-1" style={{ color: colors.hexSubtext }}>
-                    {selectedWord.reading}
+                    {clean(selectedWord.reading)}
                   </Text>
                 )}
                 <Text className="text-5xl font-black" style={{ color: colors.hexText }}>
@@ -123,7 +125,7 @@ export default function ReadingScreen() {
 
             <View className="p-4 rounded-2xl mb-6" style={{ backgroundColor: colors.hexBg }}>
               <Text className="text-xl font-medium" style={{ color: colors.hexText }}>
-                {selectedWord?.meaning}
+                {clean(selectedWord?.meaning)}
               </Text>
             </View>
 

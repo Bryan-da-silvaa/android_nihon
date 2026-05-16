@@ -25,7 +25,7 @@ interface ThemeColors {
   isLight: boolean;
 }
 
-const Themes: Record<AppTheme, ThemeColors> = {
+export const Themes: Record<AppTheme, ThemeColors> = {
   indigo_zen: {
     bg: 'bg-slate-950', hexBg: '#020617',
     bgSecondary: 'bg-slate-800', hexBgSecondary: '#1e293b',

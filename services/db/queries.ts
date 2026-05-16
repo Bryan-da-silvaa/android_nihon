@@ -408,6 +408,8 @@ export async function addInteractiveWordToDeck(front: string, back: string, read
   return true; // Ajouté avec succès
 }
 
+import { clean } from './utils';
+
 export async function lookupWord(word: string, reading?: string): Promise<{meaning?: string, reading?: string}> {
   const db = await getDb();
   try {
@@ -423,8 +425,8 @@ export async function lookupWord(word: string, reading?: string): Promise<{meani
     const dictResult: any = await db.getFirstAsync(query, params);
     if (dictResult) {
       return { 
-        meaning: dictResult.meaning_fr, 
-        reading: dictResult.reading 
+        meaning: clean(dictResult.meaning_fr), 
+        reading: clean(dictResult.reading) 
       };
     }
 
@@ -436,8 +438,8 @@ export async function lookupWord(word: string, reading?: string): Promise<{meani
       );
       if (kanjiResult) {
         return {
-          meaning: kanjiResult.meanings_fr,
-          reading: kanjiResult.readings_on || kanjiResult.readings_kun
+          meaning: clean(kanjiResult.meanings_fr),
+          reading: clean(kanjiResult.readings_on || kanjiResult.readings_kun)
         };
       }
     }

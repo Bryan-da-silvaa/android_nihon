@@ -1,48 +1,73 @@
-# Nihon Mobile - Native Japanese Learning App
+# Nihon Mobile - Premium AI Japanese Learning App
 
 ## Project Overview
-Nihon Mobile is a premium, native mobile application designed for mastering the Japanese language. It is the mobile-first counterpart to the Nihon Web platform, offering a fully localized, offline-capable learning experience directly on mobile devices.
+Nihon Mobile is a premium, native mobile application designed for mastering the Japanese language. It is a high-performance, offline-first application that integrates on-device Large Language Models (LLM) to provide a private and instantaneous learning assistant.
 
 ### Core Philosophy
-This is a **complete**, stand-alone application for learning Japanese. 
-The User Interface (UI) and User Experience (UX) must be **strictly Mobile-First**. Do not replicate or draw inspiration from the desktop-oriented UI of the web version. The design must be entirely new, extremely simple, professional, and tailored exclusively for touch interactions, gestures, and smaller screens (e.g., bottom navigation, swipe gestures, stacked native routing).
-
-### Core Pillars
-- **SRS Foundations**: Mastery of Hiragana, Katakana, Kanji, and Vocabulary through a local, high-performance Spaced Repetition System.
-- **Advanced Analytics**: Detailed tracking of progress via mobile-optimized heatmaps, accuracy charts, and historical session data.
-- **Immersion Hub**: A sophisticated mobile media player for video and audio content, featuring interactive transcriptions, A-B looping, and reading assistance (Furigana/Romaji).
-- **JLPT Progression**: Structured paths for Kanji and Vocabulary from N5 to N1.
+- **Mobile-First**: Strictly tailored for touch, gestures, and small screens.
+- **Local-First**: All data, dictionaries, and AI models run locally on the device for maximum privacy and zero latency.
+- **Hardware Accelerated**: Optimized to leverage modern mobile GPUs (especially Snapdragon 8 Gen 3 / S24 Ultra).
 
 ---
 
 ## Technical Stack
 
-### Frontend (Mobile Native)
-- **Framework**: [React Native](https://reactnative.dev/) with [Expo](https://expo.dev/) (using Expo Router for native navigation).
-- **Styling**: Native mobile styling solutions (e.g., NativeWind or StyleSheet) for a clean, responsive, and native-feeling UI.
-- **Linguistics**: `kuroshiro` & `kuromoji` (pure JS versions) running locally on the device for Japanese text processing and Furigana injection.
+### AI Engine (LocalSensei)
+- **Model**: Gemma 2.4B-it (E4B / 4-bit Quantized).
+- **Backend**: [LiteRT-LM](https://ai.google.dev/edge/litert) (formerly MediaPipe LLM Inference).
+- **Acceleration**: Full GPU (OpenCL) support with fallback to CPU.
+- **Optimizations**:
+  - **Warm-up Phase**: Silent dummy prompt on initialization to compile GPU kernels.
+  - **Context Limit**: 4096 tokens max for memory stability.
+  - **Clean Output**: Native Regex parsing to remove technical wrappers (e.g., `Text(text=...)`).
 
-### Data & Infrastructure (Local-First)
-- **Database**: **SQLite** (e.g., `expo-sqlite`). The application is strictly local-first. All data, user progress, and dictionaries are stored directly on the device for instantaneous, offline access.
-- **API Adaptation**: The server-side API logic from the web project (Next.js `/api/`) is fully adapted into local Javascript services/repositories that query the SQLite database directly. 
-- **Media Playback**: Native video/audio player components optimized for mobile hardware decoding.
+### Frontend & UI
+- **Framework**: [React Native](https://reactnative.dev/) with [Expo](https://expo.dev/) (App Router).
+- **Styling**: NativeWind (Tailwind CSS 4) with premium dark aesthetics.
+- **Chat Experience**: 
+  - **Asynchronous Streaming**: Real-time token reception via `EventEmitter`.
+  - **Bridge Throttling**: Updates sent every 100ms to prevent React Native bridge saturation.
+  - **Performance Metrics**: Real-time display of Tokens Per Second (TPS).
+  - **Keyboard Handling**: Robust manual pixel-offset calculation for perfect input alignment.
+
+### Data & Infrastructure
+- **Database**: SQLite (`expo-sqlite`) for all SRS data and vocab.
+- **App Variants**: 
+  - Dual-installation support (Dev vs Prod) via native Gradle configuration (`applicationIdSuffix`).
+  - **Nihon Dev**: `com.tabitha.nihon.dev`
+  - **Nihon**: `com.tabitha.nihon`
+  - Managed via `app.config.js` and `create-apk.sh`.
 
 ---
 
-## Architecture & Project Structure
+## Project Structure
 
-The project follows a mobile-centric architecture:
-
-- `app/`: File-based native routing (Tabs, Stacks, Modals) via Expo Router.
-- `components/`: UI layer built exclusively with native primitives (`<View>`, `<Text>`, `<Pressable>`).
-- `services/` & `db/`: Local SQLite queries and data manipulation logic (replacing the web's backend).
-- `hooks/`: Business logic extraction (e.g., SRS algorithms, media playback state).
+- `modules/local-sensei/`: Custom Expo native module for LiteRT-LM interaction.
+  - `android/src/main/java/.../LocalSenseiModule.kt`: Native Kotlin logic for AI streaming and GPU management.
+- `app/`: Native routing (including the premium `ai_chat.tsx`).
+- `services/` & `db/`: Local-first data persistence and SRS logic.
+- `scripts/`: Maintenance and build tools (including `create-apk.sh`).
 
 ---
 
-## Excluded Features (Delegated to Web)
-To ensure the mobile app remains fast, lightweight, and battery-efficient, the following "heavy" features from the web platform are explicitly excluded:
-1. **Video/Audio Downloading**: Processing or downloading external media URLs.
-2. **AI Transcription**: Running `Whisper` models to generate subtitles from scratch.
+## Current Status & Roadmap
 
-*Note: The mobile app will consume pre-processed media and JSON transcripts that have already been generated by the web platform.*
+### Completed ✅
+- Full GPU-accelerated AI integration (LocalSensei).
+- Real-time streaming with UI throttling for extreme fluidity.
+- Triple-buffered keyboard avoidance for Android.
+- Dynamic build system for Dev/Prod variants.
+
+### Ongoing 🚀
+- Performance monitoring for long AI conversations.
+- Integration of SRS vocabulary suggestions within the AI chat.
+
+---
+
+## Maintenance Commands
+
+- `npm run android:dev`: Launch the development variant.
+- `npm run android`: Launch the production variant.
+- `./create-apk.sh`: Interactive script to build and serve APKs via local HTTP server.
+
+*Note: The model file must be present at `${FileSystem.documentDirectory}/gemma-4-E4B-it.litertlm` for the engine to initialize.*

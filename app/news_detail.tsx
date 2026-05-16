@@ -11,6 +11,8 @@ import { addInteractiveWordToDeck, lookupWord } from '../services/db/queries';
 
 import { RubyText } from '../components/ui/RubyText';
 
+import { clean } from '../services/db/utils';
+
 export default function NewsDetailScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useTheme();
@@ -169,7 +171,7 @@ export default function NewsDetailScreen() {
             <View className="flex-row justify-between items-start mb-6">
               <View>
                 <Text className="text-lg font-bold opacity-50 mb-1" style={{ color: colors.hexSubtext }}>
-                  {selectedWord?.reading || 'Lecture'}
+                  {clean(selectedWord?.reading) || 'Lecture'}
                 </Text>
                 <Text className="text-6xl font-black" style={{ color: colors.hexText }}>
                   {selectedWord?.text}
@@ -188,7 +190,7 @@ export default function NewsDetailScreen() {
             <View className="bg-black/5 p-6 rounded-2xl mb-8">
               {selectedWord?.meaning ? (
                 <Text className="text-xl font-medium" style={{ color: colors.hexText }}>
-                  {selectedWord.meaning}
+                  {clean(selectedWord.meaning)}
                 </Text>
               ) : (
                 <TextInput

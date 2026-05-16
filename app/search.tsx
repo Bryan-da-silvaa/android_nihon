@@ -4,6 +4,8 @@ import { useTheme } from '../context/ThemeContext';
 import { DigitalInkCanvas } from '../components/DigitalInkCanvas';
 import { getDb } from '../services/db/client';
 
+import { clean } from '../services/db/utils';
+
 export default function SearchScreen() {
   const { colors } = useTheme();
   const [candidates, setCandidates] = useState<string[]>([]);
@@ -82,18 +84,18 @@ export default function SearchScreen() {
                   
                   <View className="flex-1">
                     <Text className="text-xl font-bold mb-1" style={{ color: colors.hexText }}>
-                      {item.meanings_fr}
+                      {clean(item.meanings_fr)}
                     </Text>
                     
                     <View className="flex-row flex-wrap gap-2">
                       {item.readings_kun && (
                         <Text className="text-sm opacity-80" style={{ color: colors.hexSubtext }}>
-                          🇯🇵 {item.readings_kun.replace(/,/g, '・')}
+                          🇯🇵 {clean(item.readings_kun).replace(/, /g, '・')}
                         </Text>
                       )}
                       {item.readings_on && (
                         <Text className="text-sm opacity-80" style={{ color: colors.hexSubtext }}>
-                          🇨🇳 {item.readings_on.replace(/,/g, '・')}
+                          🇨🇳 {clean(item.readings_on).replace(/, /g, '・')}
                         </Text>
                       )}
                     </View>

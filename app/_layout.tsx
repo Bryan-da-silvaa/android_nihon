@@ -98,10 +98,16 @@ export default function RootLayout() {
 					console.warn("Notification initialization failed:", nError);
 				}
 
-				// Initialiser le widget Android
+				// Initialiser le widget Android et le Service de Lock Screen
 				try {
-					const { refreshWidgetData } = require('../services/widget');
+					const { refreshWidgetData, registerWidgetUpdateTask } = require('../services/widget');
 					await refreshWidgetData();
+					await registerWidgetUpdateTask();
+
+					if (Platform.OS === 'android') {
+						const { WidgetManagerModule } = require('../modules/widget-manager');
+						WidgetManagerModule.startLockScreenService();
+					}
 				} catch (wError) {
 					console.warn("Widget initialization failed:", wError);
 				}

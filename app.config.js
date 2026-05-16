@@ -11,6 +11,10 @@ module.exports = ({ config }) => {
     ios: {
       ...config.ios,
       bundleIdentifier: IS_DEV ? 'com.tabitha.nihon.dev' : 'com.tabitha.nihon',
-    }
+    },
+    plugins: [
+      ...(config.plugins || []),
+      "expo-background-task"
+    ]
   };
 };

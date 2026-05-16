@@ -16,6 +16,7 @@ interface Props {
   onComplete?: (strokeCount: number, score?: number) => void;
   colors: any;
   brushSkin?: string;
+  onAudioPress?: () => void;
 }
 
 const BRUSH_STYLES: Record<string, { strokeWidth: number; opacity?: number; glowColor?: string; stroke?: string }> = {
@@ -25,7 +26,7 @@ const BRUSH_STYLES: Record<string, { strokeWidth: number; opacity?: number; glow
   neon: { strokeWidth: 4, stroke: '#6366F1' },
 };
 
-export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onComplete, colors, brushSkin = 'classic' }) => {
+export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onComplete, colors, brushSkin = 'classic', onAudioPress }) => {
   const [paths, setPaths] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState<string>('');
   const [strokeCount, setStrokeCount] = useState(0);
@@ -153,6 +154,14 @@ export const KanjiCanvas: React.FC<Props> = ({ targetKanji, expectedStrokes, onC
             </Svg>
           </View>
         </GestureDetector>
+
+        {/* Bouton Audio discret à gauche */}
+        <Pressable 
+          onPress={onAudioPress}
+          className="absolute top-4 left-4 p-2 active:opacity-50"
+        >
+          <Ionicons name="volume-high" size={24} color="#3b82f6" />
+        </Pressable>
 
         {/* Bouton pour afficher l'aide (ordre) */}
         {strokes && (

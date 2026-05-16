@@ -17,6 +17,7 @@ export default function LearnKanjiScreen() {
 	const { colors } = useTheme();
 	const params = useLocalSearchParams();
 	const jlpt = params.jlpt ? parseInt(params.jlpt as string) : 5;
+	const literal = params.literal as string | undefined;
 
 	const [step, setStep] = useState<Step>('LOADING');
 	const [kanjis, setKanjis] = useState<any[]>([]);
@@ -45,13 +46,24 @@ export default function LearnKanjiScreen() {
 	useEffect(() => {
 		async function load() {
 			const db = await getDb();
-			const data = await db.getAllAsync(`
-				SELECT kd.* FROM kanji_data kd
-				LEFT JOIN user_kanji_stats uks ON kd.id = uks.kanji_id
-				WHERE kd.jlpt = ? AND (uks.id IS NULL)
-				ORDER BY kd.frequency ASC, kd.id ASC
-				LIMIT 5
-			`, [jlpt]) as any[];
+			let data: any[] = [];
+			
+			if (literal) {
+				// Deep Link: Charger un Kanji spécifique
+				data = await db.getAllAsync(`
+					SELECT kd.* FROM kanji_data kd
+					WHERE kd.literal = ?
+				`, [literal]) as any[];
+			} else {
+				// Mode normal : Nouveaux kanjis
+				data = await db.getAllAsync(`
+					SELECT kd.* FROM kanji_data kd
+					LEFT JOIN user_kanji_stats uks ON kd.id = uks.kanji_id
+					WHERE kd.jlpt = ? AND (uks.id IS NULL)
+					ORDER BY kd.frequency ASC, kd.id ASC
+					LIMIT 5
+				`, [jlpt]) as any[];
+			}
 
 			if (data.length === 0) {
 				router.back();
@@ -61,7 +73,7 @@ export default function LearnKanjiScreen() {
 			setStep('INTRO');
 		}
 		load();
-	}, [jlpt]);
+	}, [jlpt, literal]);
 
 	const startQuiz = () => {
 		const items: QuizItem[] = kanjis.map(k => {
@@ -169,6 +181,11 @@ export default function LearnKanjiScreen() {
 		setTraceRepetitions(newCount);
 		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		
+		// Jouer l'audio du kanji à chaque tracé réussi
+		if (kanjis[currentIndex]) {
+			playSound(kanjis[currentIndex].literal);
+		}
+		
 		if (newCount === REQUIRED_TRACES) {
 			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 		}
@@ -215,20 +232,22 @@ export default function LearnKanjiScreen() {
 				</View>
 
 				<View className="items-center flex-1 justify-center">
-					{/* Box de traduction avec réduction auto de la police */}
-					<View className="h-20 w-full items-center justify-center mb-4 px-4">
-						<Text 
-							className="font-black text-center uppercase tracking-tight" 
-							style={{ color: colors.hexText, fontSize: 24 }}
-							numberOfLines={2}
-							adjustsFontSizeToFit
-						>
-							{parseJsonArray(current.meanings_fr || current.meanings_en)}
-						</Text>
-						<Text style={{ color: colors.hexAccent, fontWeight: '900', fontSize: 12, marginTop: 4 }} className="uppercase tracking-[0.2em]">
-							Tracé {traceRepetitions} / {REQUIRED_TRACES} 
-							{traceRepetitions >= REQUIRED_TRACES && sessionScores.length > 0 && ` • Précision : ${avgScore}%`}
-						</Text>
+					{/* Box de traduction simple centrée */}
+					<View className="h-24 w-full items-center justify-center mb-4 px-6">
+						<View className="justify-center">
+							<Text 
+								className="font-black text-center uppercase tracking-tight" 
+								style={{ color: colors.hexText, fontSize: 24 }}
+								numberOfLines={2}
+								adjustsFontSizeToFit
+							>
+								{parseJsonArray(current.meanings_fr || current.meanings_en)}
+							</Text>
+							<Text style={{ color: colors.hexAccent, fontWeight: '900', fontSize: 12, marginTop: 4, textAlign: 'center' }} className="uppercase tracking-[0.2em]">
+								Tracé {traceRepetitions} / {REQUIRED_TRACES} 
+								{traceRepetitions >= REQUIRED_TRACES && sessionScores.length > 0 && ` • Précision : ${avgScore}%`}
+							</Text>
+						</View>
 					</View>
 
 					<KanjiCanvas 
@@ -236,6 +255,7 @@ export default function LearnKanjiScreen() {
 						colors={colors}
 						onComplete={onTraceComplete}
 						brushSkin={brushSkin}
+						onAudioPress={() => playSound(current.literal)}
 					/>
 				</View>
 

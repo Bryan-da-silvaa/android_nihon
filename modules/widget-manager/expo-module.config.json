@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["WidgetManagerModule"]
+  },
+  "android": {
+    "modules": ["com.tabitha.nihon.widgetmanager.WidgetManagerModule"]
+  }
+}
