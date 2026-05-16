@@ -1,0 +1,110 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  <uses-permission android:name="android.permission.VIBRATE"/>
+  <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.VIEW"/>
+      <category android:name="android.intent.category.BROWSABLE"/>
+      <data android:scheme="https"/>
+    </intent>
+  </queries>
+  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="true" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false">
+    <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
+    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
+    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
+    <service android:name="expo.modules.audio.service.AudioControlsService" android:exported="false" android:foregroundServiceType="mediaPlayback">
+      <intent-filter>
+        <action android:name="androidx.media3.session.MediaSessionService"/>
+      </intent-filter>
+    </service>
+    <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="nihon"/>
+        <data android:scheme="exp+nihon"/>
+      </intent-filter>
+    </activity>
+
+    <!-- Permet à LiteRT-LM d'accéder aux drivers GPU (OpenCL) -->
+    <uses-native-library android:name="libvndksupport.so" android:required="false"/>
+    <uses-native-library android:name="libOpenCL.so" android:required="false"/>
+
+    <!-- Jetpack Glance Widget Receiver -->
+    <receiver
+        android:name=".widget.NihonGlanceWidgetReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data
+            android:name="android.appwidget.provider"
+            android:resource="@xml/nihon_widget_info" />
+    </receiver>
+
+    <!-- Receiver pour le déverrouillage de l'écran -->
+    <receiver
+        android:name=".widget.UnlockReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.USER_PRESENT" />
+        </intent-filter>
+    </receiver>
+
+    <!-- Service pour l'écran de verrouillage -->
+    <service
+        android:name=".widget.LockScreenService"
+        android:foregroundServiceType="specialUse"
+        android:exported="false" />
+
+    <!-- Activité pour l'écran de verrouillage -->
+    <activity
+        android:name=".widget.LockScreenActivity"
+        android:showOnLockScreen="true"
+        android:launchMode="singleTop"
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:exported="false" />
+
+    <!-- Tile Service pour les Paramètres Rapides -->
+    <service
+        android:name=".widget.LockScreenTileService"
+        android:label="Nihon Immersion"
+        android:icon="@android:drawable/ic_lock_idle_lock"
+        android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.service.quicksettings.action.QS_TILE" />
+        </intent-filter>
+    </service>
+
+    <!-- Dictionnaire Rapide via "Traitement de texte" (Surlignage) -->
+    <activity
+        android:name=".widget.ProcessTextActivity"
+        android:label="Chercher dans Nihon"
+        android:theme="@android:style/Theme.Translucent.NoTitleBar"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="text/plain" />
+        </intent-filter>
+    </activity>
+  </application>
+</manifest>

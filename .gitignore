@@ -45,6 +45,6 @@ yarn-error.*
 
 app-example
 
-# generated native folders
-/ios
-/android
+# generated native folders (Commentés pour sauvegarder notre code natif)
+# /ios
+# /android
